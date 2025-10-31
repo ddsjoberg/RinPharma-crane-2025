@@ -1,0 +1,1046 @@
+[
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#questions",
+    "href": "slides/02-tables-gtsummary/index.html#questions",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Questions",
+    "text": "Questions\n\n\n Please ask questions at any time!"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#section",
+    "href": "slides/02-tables-gtsummary/index.html#section",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "",
+    "text": "How it started\n\n\nBegan to address reproducible issues while working in academia\nGoal was to build a package to summarize study results with code that was both simple and customizable\nFirst release in May 2019\n\n\n\nHow it’s going\n\n\nThe stats\n\n1,700,000 installations from CRAN\n1,200 GitHub stars\n1,000 citations in peer-reviewed articles\n350 contributors\n50 code contributors\n\nWon the 2021 American Statistical Association (ASA) Innovation in Programming Award\nWon the 2024 Posit Pharma Table Contest"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-overview",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-overview",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} overview",
+    "text": "{gtsummary} overview\n\n\n\nCreate tabular summaries with sensible defaults but highly customizable\nTypes of summaries:\n\nDemographic- or “Table 1”-types\nCross-tabulation\nRegression models\nSurvival data\nSurvey data\nCustom tables\n\n\n\n\nReport statistics from {gtsummary} tables inline in R Markdown\nStack and/or merge any table type\nUse themes to standardize across tables\nChoose from different print engines"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-overview-1",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-overview-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} overview",
+    "text": "{gtsummary} overview\nFor our workshop, we will focus on the following summary types as well as themes and print engines.\n\ntbl_summary()\ntbl_hierarchical()\n\n\nOther functions helpful functions we’re not covering:\n\n\ntbl_hierarchical_count(): similar to tbl_hierarchical() for counts instead of rates\ntbl_cross(): cross tabulations\ntbl_continuous(): summarizing continuous variables by 2 categorical variables\ntbl_wide_summary(): similar to tbl_summary() but statistics are presented in separate columns\nmany more!"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#pharmaverseadam-data-for-examples",
+    "href": "slides/02-tables-gtsummary/index.html#pharmaverseadam-data-for-examples",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{pharmaverseadam} Data for Examples",
+    "text": "{pharmaverseadam} Data for Examples\nReduced sizes of adsl, adse, adlb. Created ad_onco with oncologic outcomes.\n\nlibrary(tidyverse)\n\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  filter(SAFFL == \"Y\") |&gt; \n  mutate(ARM2 = word(ARM), FEMALE = SEX == \"F\") |&gt; \n  labelled::set_variable_labels(FEMALE = \"Female\")\n\nadae &lt;- pharmaverseadam::adae |&gt; \n  filter(\n    USUBJID %in% adsl$USUBJID,\n    AESOC %in% c(\"CARDIAC DISORDERS\", \"EYE DISORDERS\"),\n    AEDECOD %in% c(\"ATRIAL FLUTTER\", \"MYOCARDIAL INFARCTION\", \"EYE ALLERGY\", \"EYE SWELLING\")\n  ) |&gt; \n  mutate(ARM2 = word(ARM))\n\nadlb &lt;- pharmaverseadam::adlb |&gt; \n  filter(\n    USUBJID %in% adsl$USUBJID, \n    PARAM %in% c(\"Albumin (g/L)\", \"Bilirubin (umol/L)\" , \"Leukocytes (10^9/L)\"),\n    AVISIT %in% c(\"Baseline\", \"Week 12\", \"Week 24\")\n  ) |&gt; \n  mutate(ARM2 = word(ARM))\n\n# Construct an oncology outcomes dataset\nad_onco &lt;-\n  list(\n    # Best Overall Response\n    pharmaverseadam::adrs_onco |&gt; \n      filter(PARAMCD == \"CBOR\") |&gt; \n      select(USUBJID, RECIST_CBOR = AVALC) |&gt; \n      labelled::set_variable_labels(RECIST_CBOR = \"Best Overall Response\"),\n    # Tumor Size\n    pharmaverseadam::adtr_onco |&gt; \n      filter(PARAM == \"Target Lesions Sum of Diameters by Investigator\") |&gt; \n      select(USUBJID, TUMOR_SIZE = AVAL) |&gt; \n      labelled::set_variable_labels(TUMOR_SIZE = \"Tumor Size, mm\"),\n    # Progression-free Survival\n    pharmaverseadam::adtte_onco |&gt; \n      filter(PARAMCD == \"PFS\") |&gt; \n      select(USUBJID, PFS_CNSR = CNSR, PFS_TIME = AVAL) |&gt; \n      mutate(PFS_EVENT = abs(PFS_CNSR - 1)) |&gt; \n      labelled::set_variable_labels(\n        PFS_CNSR = \"PFS, Censor\",\n        PFS_EVENT = \"Progression\",\n        PFS_TIME = \"PFS Followup Time, days\"\n      )\n  ) |&gt; \n  reduce(full_join, by = \"USUBJID\") |&gt; \n  inner_join(adsl[c(\"USUBJID\", \"AGE\", \"ETHNIC\", \"ARM\")], by = \"USUBJID\") |&gt; \n  mutate(ARM2 = word(ARM))"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#basic-tbl_summary",
+    "href": "slides/02-tables-gtsummary/index.html#basic-tbl_summary",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Basic tbl_summary()",
+    "text": "Basic tbl_summary()\n\n\n\nlibrary(gtsummary)\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE)\n  )\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN = 2541\n\n\n\n\nAge\n77 (70, 81)\n\n\nEthnicity\n\n\n\n\n    HISPANIC OR LATINO\n12 (4.7%)\n\n\n    NOT HISPANIC OR LATINO\n242 (95%)\n\n\nFemale\n143 (56%)\n\n\n\n1 Median (Q1, Q3); n (%)\n\n\n\n\n\n\n\n\n\n\nFour types of summaries: continuous, continuous2, categorical, and dichotomous\nStatistics are median (IQR) for continuous, n (%) for categorical/dichotomous\nVariables coded 0/1, TRUE/FALSE, Yes/No treated as dichotomous by default\nLabel attributes are printed automatically"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output",
+    "href": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Customize tbl_summary() output",
+    "text": "Customize tbl_summary() output\n\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE),\n    by = ARM2,\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nAge\n76 (69, 82)\n77 (71, 81)\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 (62%)\n90 (54%)\n\n\n\n1 Median (Q1, Q3); n (%)\n\n\n\n\n\n\n\n\n\n\n\n\nby: specify a column variable for cross-tabulation"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-1",
+    "href": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Customize tbl_summary() output",
+    "text": "Customize tbl_summary() output\n\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE),\n    by = ARM2,\n    type = AGE ~ \"continuous2\",\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nAge\n\n\n\n\n\n\n    Median (Q1, Q3)\n76 (69, 82)\n77 (71, 81)\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 (62%)\n90 (54%)\n\n\n\n1 n (%)\n\n\n\n\n\n\n\n\n\n\n\n\nby: specify a column variable for cross-tabulation\ntype: specify the summary type"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-2",
+    "href": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Customize tbl_summary() output",
+    "text": "Customize tbl_summary() output\n\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE),\n    by = ARM2,\n    type = AGE ~ \"continuous2\",\n    statistic = \n      list(\n        AGE ~ c(\"{mean} ({sd})\", \n                \"{min}, {max}\"), \n        FEMALE ~ \"{n} / {N} ({p}%)\"\n      ),\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nAge\n\n\n\n\n\n\n    Mean (SD)\n75 (9)\n75 (8)\n\n\n    Min, Max\n52, 89\n51, 88\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 / 86 (62%)\n90 / 168 (54%)\n\n\n\n1 n (%); n / N (%)\n\n\n\n\n\n\n\n\n\n\n\n\nby: specify a column variable for cross-tabulation\ntype: specify the summary type\nstatistic: customize the reported statistics"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-3",
+    "href": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-3",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Customize tbl_summary() output",
+    "text": "Customize tbl_summary() output\n\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE),\n    by = ARM2,\n    type = AGE ~ \"continuous2\",\n    statistic = \n      list(\n        AGE ~ c(\"{mean} ({sd})\", \n                \"{min}, {max}\"), \n        FEMALE ~ \"{n} / {N} ({p}%)\"\n      ),\n    label = \n      AGE ~ \"Age, years\",\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nAge, years\n\n\n\n\n\n\n    Mean (SD)\n75 (9)\n75 (8)\n\n\n    Min, Max\n52, 89\n51, 88\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 / 86 (62%)\n90 / 168 (54%)\n\n\n\n1 n (%); n / N (%)\n\n\n\n\n\n\n\n\n\n\n\n\nby: specify a column variable for cross-tabulation\ntype: specify the summary type\nstatistic: customize the reported statistics\n\n\n\nlabel: change or customize variable labels"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-4",
+    "href": "slides/02-tables-gtsummary/index.html#customize-tbl_summary-output-4",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Customize tbl_summary() output",
+    "text": "Customize tbl_summary() output\n\n\nadsl |&gt; \n  tbl_summary(\n    include = c(AGE, ETHNIC, FEMALE),\n    by = ARM2,\n    type = AGE ~ \"continuous2\",\n    statistic = \n      list(\n        AGE ~ c(\"{mean} ({sd})\", \n                \"{min}, {max}\"), \n        FEMALE ~ \"{n} / {N} ({p}%)\"\n      ),\n    label = \n      AGE ~ \"Age, years\",\n    digits = AGE ~ list(sd = 1) # report SD(age) to one decimal place\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nAge, years\n\n\n\n\n\n\n    Mean (SD)\n75 (8.6)\n75 (8.1)\n\n\n    Min, Max\n52, 89\n51, 88\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 / 86 (62%)\n90 / 168 (54%)\n\n\n\n1 n (%); n / N (%)\n\n\n\n\n\n\n\n\n\n\n\n\nby: specify a column variable for cross-tabulation\ntype: specify the summary type\nstatistic: customize the reported statistics\n\n\n\nlabel: change or customize variable labels\ndigits: specify the number of decimal places for rounding"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-formulas",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-formulas",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} + formulas",
+    "text": "{gtsummary} + formulas\nThis syntax is also used in {cards}, {cardx}, {crane}, and {gt}.\n\n\n\nNamed list are OK too! label = list(age = \"Patient Age\")"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#section-1",
+    "href": "slides/02-tables-gtsummary/index.html#section-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "",
+    "text": "{gtsummary} selectors\n\nUse the following helpers to select groups of variables: all_continuous(), all_categorical()\nUse all_stat_cols() to select the summary statistic columns\n\nAdd-on functions in {gtsummary}\ntbl_summary() objects can also be updated using related functions.\n\nadd_*() add additional column of statistics or information, e.g. p-values, q-values, overall statistics, treatment differences, N obs., and more\nmodify_*() modify table headers, spanning headers, footnotes, and more"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_",
+    "href": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Update tbl_summary() with add_*()",
+    "text": "Update tbl_summary() with add_*()\n\n\nadsl |&gt;\n  tbl_summary(\n    by = ARM2,\n    include = c(AGE, ETHNIC, FEMALE)\n  ) |&gt; \n  add_overall(last = TRUE)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\nXanomeline\nN = 1681\nOverall\nN = 2541\n\n\n\n\nAge\n76 (69, 82)\n77 (71, 81)\n77 (70, 81)\n\n\nEthnicity\n\n\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n12 (4.7%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n242 (95%)\n\n\nFemale\n53 (62%)\n90 (54%)\n143 (56%)\n\n\n\n1 Median (Q1, Q3); n (%)\n\n\n\n\n\n\n\n\n\nadd_overall(): adds a column of overall statistics"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-1",
+    "href": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Update tbl_summary() with add_*()",
+    "text": "Update tbl_summary() with add_*()\n\n\nad_onco |&gt;\n  tbl_summary(\n    by = ARM2, \n    include = c(TUMOR_SIZE, PFS_EVENT),\n    missing = \"no\"\n  ) |&gt; \n  add_n() |&gt; \n  add_p(\n    pvalue_fun = \\(x) round(x, 2)\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN\nPlacebo\nN = 961\nXanomeline\nN = 1771\np-value2\n\n\n\n\nTumor Size, mm\n25\n78 (38, 96)\n67 (26, 92)\n0.66\n\n\nProgression\n273\n6 (6.3%)\n9 (5.1%)\n0.69\n\n\n\n1 Median (Q1, Q3); n (%)\n\n\n2 Wilcoxon rank sum test; Pearson’s Chi-squared test\n\n\n\n\n\n\n\n\n\nadd_n(): adds a column non-missing counts\nadd_p(): adds a column of p-values"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-modify_",
+    "href": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-modify_",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Update tbl_summary() with modify_*()",
+    "text": "Update tbl_summary() with modify_*()\n\n\ntbl &lt;-\n  adsl |&gt; \n  tbl_summary(by = ARM2, include = c(\"AGE\", \"ETHNIC\", \"FEMALE\")) |&gt;\n  modify_header(\n    stat_1 ~ \"**Group A**\",\n    stat_2 ~ \"**Group B**\"\n  ) |&gt; \n  modify_spanning_header(\n    all_stat_cols() ~ \"**Drug**\") |&gt; \n  modify_footnote(\n    all_stat_cols() ~ \n      paste(\"median (IQR) for continuous;\",\n            \"n (%) for categorical\")\n  )\ntbl\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\n\nDrug\n\n\n\nGroup A1\nGroup B1\n\n\n\n\nAge\n76 (69, 82)\n77 (71, 81)\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\nFemale\n53 (62%)\n90 (54%)\n\n\n\n1 median (IQR) for continuous; n (%) for categorical\n\n\n\n\n\n\n\n\n\nUse show_header_names() to see the internal header names available for use in modify_header()"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#column-names",
+    "href": "slides/02-tables-gtsummary/index.html#column-names",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Column names",
+    "text": "Column names\n\nshow_header_names(tbl)\n\nColumn Name   Header                 level*             N*          n*          p*             \nlabel         \"**Characteristic**\"                      254 &lt;int&gt;                              \nstat_1        \"**Group A**\"             Placebo &lt;chr&gt;   254 &lt;int&gt;    86 &lt;int&gt;   0.339 &lt;dbl&gt;    \nstat_2        \"**Group B**\"          Xanomeline &lt;chr&gt;   254 &lt;int&gt;   168 &lt;int&gt;   0.661 &lt;dbl&gt;    \n\n\n* These values may be dynamically placed into headers (and other locations).\nℹ Review the `modify_header()` (`?gtsummary::modify_header()`) help for examples.\n\n\n\n\nall_stat_cols() selects columns \"stat_1\" and \"stat_2\""
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-2",
+    "href": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Update tbl_summary() with add_*()",
+    "text": "Update tbl_summary() with add_*()\n\nad_onco |&gt;\n  tbl_summary(\n    by = ARM2,\n    include = c(TUMOR_SIZE, PFS_EVENT),\n    statistic = list(TUMOR_SIZE = \"{mean} ({sd})\",\n                     PFS_EVENT = \"{p}%\"),\n    missing = \"no\"\n  ) |&gt; \n  add_difference()\n\n\n\n\n  \n    \n      Characteristic\n      Placebo\nN = 961\n      Xanomeline\nN = 1771\n      Difference2\n      95% CI2\n      p-value2\n    \n  \n  \n    Tumor Size, mm\n67 (37)\n59 (39)\n7.6\n-24, 39\n0.6\n    Progression\n6.3%\n5.1%\n1.2%\n-5.5%, 7.8%\n&gt;0.9\n  \n  \n    \n      Abbreviation: CI = Confidence Interval\n    \n  \n  \n    \n      1 Mean (SD); %\n    \n    \n      2 Welch Two Sample t-test; 2-sample test for equality of proportions with continuity correction\n    \n  \n\n\n\n\n\nadd_difference(): mean and rate differences between two groups. Can also be adjusted differences"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-3",
+    "href": "slides/02-tables-gtsummary/index.html#update-tbl_summary-with-add_-3",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Update tbl_summary() with add_*()",
+    "text": "Update tbl_summary() with add_*()\n\n\n\nadsl |&gt;\n  tbl_summary(\n    by = ARM2,\n    include = c(AGE, ETHNIC, FEMALE)\n  ) |&gt; \n  add_stat(...)\n\n\n\nCustomize statistics presented with add_stat()\nAdded statistics can be placed on the label or the level rows\nAdded statistics may be a single column or multiple"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#add-on-functions-in-gtsummary-1",
+    "href": "slides/02-tables-gtsummary/index.html#add-on-functions-in-gtsummary-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Add-on functions in {gtsummary}",
+    "text": "Add-on functions in {gtsummary}\nAnd many more!\nSee the documentation at http://www.danieldsjoberg.com/gtsummary/reference/index.html\nAnd a detailed tbl_summary() vignette at http://www.danieldsjoberg.com/gtsummary/articles/tbl_summary.html"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-exercise",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-exercise",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} Exercise",
+    "text": "{gtsummary} Exercise\n\nNavigate to Workshop Website ‍➡️ Exercises ‍➡️ 02-tables-gtsummary.R\nCreate the table outlined in the script.\n\n\n\n\n−+\n07:00"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-exercise-1",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-exercise-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} Exercise",
+    "text": "{gtsummary} Exercise\n\ntbl &lt;-\n  df_gtsummary_exercise |&gt;\n  # ensure the age groups print in the correct order\n  mutate(AGEGR1 = factor(AGEGR1, levels = c(\"18-64\", \"&gt;64\"))) |&gt;\n  tbl_summary(\n    by = TRT01A,\n    include = c(AGE, AGEGR1, SEX, RACE, ETHNIC, BMI, HEIGHT, WEIGHT), \n    type = all_continuous() ~ \"continuous2\", # all continuous variables should be summarized as multi-row\n    statistic = all_continuous() ~ c(\"{mean} ({sd})\", \"{median} ({p25}, {p75})\", \"{min}, {max}\"), # change the statistics for all continuous variables\n    label = list(AGEGR1 = \"Age Group\"), # add a label for AGEGR1\n  ) |&gt;\n  # add a header above the 'Xanomeline' treatments. We used `show_header_names()` to know the column names\n  modify_spanning_header(c(stat_2, stat_3) ~ \"**Active Treatment**\")\n\ntbl"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-exercise-1-output",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-exercise-1-output",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} Exercise",
+    "text": "{gtsummary} Exercise\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = 861\n\nActive Treatment\n\n\n\nXanomeline High Dose\nN = 721\nXanomeline Low Dose\nN = 961\n\n\n\n\nAge\n\n\n\n\n\n\n\n\n    Mean (SD)\n75 (9)\n74 (8)\n76 (8)\n\n\n    Median (Q1, Q3)\n76 (69, 82)\n76 (70, 79)\n78 (71, 82)\n\n\n    Min, Max\n52, 89\n56, 88\n51, 88\n\n\nAge Group\n\n\n\n\n\n\n\n\n    18-64\n14 (16%)\n11 (15%)\n8 (8.3%)\n\n\n    &gt;64\n72 (84%)\n61 (85%)\n88 (92%)\n\n\nSex\n\n\n\n\n\n\n\n\n    F\n53 (62%)\n35 (49%)\n55 (57%)\n\n\n    M\n33 (38%)\n37 (51%)\n41 (43%)\n\n\nRace\n\n\n\n\n\n\n\n\n    AMERICAN INDIAN OR ALASKA NATIVE\n0 (0%)\n1 (1.4%)\n0 (0%)\n\n\n    BLACK OR AFRICAN AMERICAN\n8 (9.3%)\n9 (13%)\n6 (6.3%)\n\n\n    WHITE\n78 (91%)\n62 (86%)\n90 (94%)\n\n\nEthnicity\n\n\n\n\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n3 (4.2%)\n6 (6.3%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n69 (96%)\n90 (94%)\n\n\nBMI\n\n\n\n\n\n\n\n\n    Mean (SD)\n23.6 (3.6)\n25.3 (3.7)\n25.1 (4.4)\n\n\n    Median (Q1, Q3)\n23.2 (21.0, 25.8)\n24.6 (23.0, 27.4)\n24.6 (22.1, 28.2)\n\n\n    Min, Max\n15.7, 34.0\n19.0, 35.5\n15.0, 39.8\n\n\nHeight, cm\n\n\n\n\n\n\n\n\n    Mean (SD)\n163 (12)\n166 (10)\n164 (10)\n\n\n    Median (Q1, Q3)\n163 (154, 171)\n165 (157, 173)\n163 (157, 170)\n\n\n    Min, Max\n137, 185\n146, 191\n136, 196\n\n\nWeight, kg\n\n\n\n\n\n\n\n\n    Mean (SD)\n63 (13)\n70 (14)\n68 (15)\n\n\n    Median (Q1, Q3)\n60 (54, 74)\n69 (57, 80)\n67 (56, 78)\n\n\n    Min, Max\n34, 85\n47, 107\n41, 105\n\n\n\n1 n (%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#adverse-event-reporting-and-friends",
+    "href": "slides/02-tables-gtsummary/index.html#adverse-event-reporting-and-friends",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Adverse Event Reporting (and friends)",
+    "text": "Adverse Event Reporting (and friends)\nUse tbl_hierarchicial() and tbl_hierarchicial_count() for reporting of AEs, Con Meds, and more.\n\ntbl_ae &lt;- adae |&gt; \n  tbl_hierarchical(\n    by = \"ARM2\", \n    variables = c(\"AESOC\", \"AEDECOD\"),\n    id = \"USUBJID\",\n    denominator = adsl\n  )\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPrimary System Organ Class\n    Dictionary-Derived Term\nPlacebo\nN = 861\nXanomeline\nN = 1681\n\n\n\n\nCARDIAC DISORDERS\n4 (4.7%)\n8 (4.8%)\n\n\n    ATRIAL FLUTTER\n0 (0%)\n2 (1.2%)\n\n\n    MYOCARDIAL INFARCTION\n4 (4.7%)\n6 (3.6%)\n\n\nEYE DISORDERS\n1 (1.2%)\n0 (0%)\n\n\n    EYE ALLERGY\n1 (1.2%)\n0 (0%)\n\n\n    EYE SWELLING\n1 (1.2%)\n0 (0%)\n\n\n\n1 n (%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#tbl_merge-for-side-by-side-tables",
+    "href": "slides/02-tables-gtsummary/index.html#tbl_merge-for-side-by-side-tables",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "tbl_merge() for side-by-side tables",
+    "text": "tbl_merge() for side-by-side tables\n\ntbl_n &lt;- \n  tbl_summary(adsl, include = ETHNIC, statistic = ETHNIC ~ \"{n}\") |&gt; \n  modify_header(all_stat_cols() ~ \"**N**\") |&gt; # update column header\n  remove_footnote_header() # remove footnote\ntbl_age &lt;-\n  tbl_continuous(adsl, include = ETHNIC, variable = AGE, by = ARM2) |&gt; \n  modify_header(all_stat_cols() ~ \"**{level}**\") # update header\n\n# combine the tables side by side\nlist(tbl_n, tbl_age) |&gt; \n  tbl_merge(tab_spanner = FALSE) # suppress default header\n\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN\nPlacebo1\nXanomeline1\n\n\n\n\nEthnicity\n\n\n\n\n\n\n\n\n    HISPANIC OR LATINO\n12\n64 (63, 86)\n63 (56, 78)\n\n\n    NOT HISPANIC OR LATINO\n242\n76 (70, 82)\n77 (71, 81)\n\n\n\n1 Age: Median (Q1, Q3)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#tbl_stack-to-combine-vertically",
+    "href": "slides/02-tables-gtsummary/index.html#tbl_stack-to-combine-vertically",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "tbl_stack() to combine vertically",
+    "text": "tbl_stack() to combine vertically\n\ntbl_drug_a &lt;- filter(adsl, ARM2 == \"Placebo\") |&gt; \n  tbl_summary(include = ETHNIC)\ntbl_drug_b &lt;- filter(adsl, ARM2 == \"Xanomeline\") |&gt; \n  tbl_summary(include = ETHNIC)\n\n# stack the two tables \nlist(tbl_drug_a, tbl_drug_b) |&gt; \n  tbl_stack(group_header = c(\"Placebo\", \"Xanomeline\"), quiet = TRUE) |&gt; # optionally include headers for each table\n  modify_header(all_stat_cols() ~ \"**Summary Statistics**\")\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nSummary Statistics1\n\n\n\n\nPlacebo\n\n\nEthnicity\n\n\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n\n\nXanomeline\n\n\nEthnicity\n\n\n\n\n    HISPANIC OR LATINO\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n159 (95%)\n\n\n\n1 n (%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#define-custom-function-tbl_cmh",
+    "href": "slides/02-tables-gtsummary/index.html#define-custom-function-tbl_cmh",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Define custom function tbl_cmh()",
+    "text": "Define custom function tbl_cmh()"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#define-custom-function-tbl_cmh-1",
+    "href": "slides/02-tables-gtsummary/index.html#define-custom-function-tbl_cmh-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Define custom function tbl_cmh()",
+    "text": "Define custom function tbl_cmh()"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#cobbling-tables-together",
+    "href": "slides/02-tables-gtsummary/index.html#cobbling-tables-together",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Cobbling Tables Together",
+    "text": "Cobbling Tables Together\n\nThe {gtsummary} package makes it simple to break complex tables into their simple parts and cobble them together in the end.\nMoreover, the internal structure of a gtsummary table is super simple:\n\nA data frame\nInstructions to print that data frame to make it cute.\n\nModify the underlying data frame directly with modify_table_body().\n\n\ntbl_summary(adsl, include = c(AGE, ETHNIC), by = ARM2) |&gt; \n  pluck(\"table_body\")\n\n# A tibble: 4 × 7\n  variable var_type    row_type var_label label                  stat_1      stat_2     \n  &lt;chr&gt;    &lt;chr&gt;       &lt;chr&gt;    &lt;chr&gt;     &lt;chr&gt;                  &lt;chr&gt;       &lt;chr&gt;      \n1 AGE      continuous  label    Age       Age                    76 (69, 82) 77 (71, 81)\n2 ETHNIC   categorical label    Ethnicity Ethnicity              &lt;NA&gt;        &lt;NA&gt;       \n3 ETHNIC   categorical level    Ethnicity HISPANIC OR LATINO     3 (3.5%)    9 (5.4%)   \n4 ETHNIC   categorical level    Ethnicity NOT HISPANIC OR LATINO 83 (97%)    159 (95%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#where-are-the-ards",
+    "href": "slides/02-tables-gtsummary/index.html#where-are-the-ards",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Where are the ARDs?",
+    "text": "Where are the ARDs?\n\n\n\nARDs are the backbone for all calculations in gtsummary\nEvery gtsummary table saves the ARDs from each calculation\n\n\n\ntbl &lt;- tbl_summary(adsl, by = \"ARM2\", include = \"AGE\")\ngather_ard(tbl)\n\n$tbl_summary\n\n\n{cards} data frame: 27 x 12\n\n\n   group1 group1_level variable variable_level stat_name stat_label      stat\n1    ARM2      Placebo      AGE                   median     Median        76\n2    ARM2      Placebo      AGE                      p25         Q1        69\n3    ARM2      Placebo      AGE                      p75         Q3        82\n4    ARM2    Xanomeli…      AGE                   median     Median        77\n5    ARM2    Xanomeli…      AGE                      p25         Q1        71\n6    ARM2    Xanomeli…      AGE                      p75         Q3        81\n7    &lt;NA&gt;                   AGE                    label  Variable…       Age\n8    &lt;NA&gt;                   AGE                    class  Variable…   numeric\n9    &lt;NA&gt;                  ARM2                    label  Variable…      ARM2\n10   &lt;NA&gt;                  ARM2                    class  Variable… character\n\n\nℹ 17 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 5 more variables: context, fmt_fun, warning, error, gts_column"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-qc",
+    "href": "slides/02-tables-gtsummary/index.html#ard-qc",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD + QC",
+    "text": "ARD + QC\nARDs are wonderful for QCing {gtsummary} tables. 😻\n\nARDs include the formatted and un-formatted numbers that appear in the table.\nExtract the ARD from the {gtsummary} table.\nBuild fresh ARD from source data, and compare it to the ARD from the table."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-qc-build-and-compare-ards",
+    "href": "slides/02-tables-gtsummary/index.html#ard-qc-build-and-compare-ards",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD + QC: Build and Compare ARDs",
+    "text": "ARD + QC: Build and Compare ARDs\n\nard_demog &lt;- adsl |&gt; \n  cards::ard_stack(\n    cards::ard_summary(\n      variables = \"AGE\",\n      statistic = \n        AGE ~ cards::continuous_summary_fns(c(\"median\", \"p25\", \"p75\"))\n    ),\n    .by = \"ARM2\", \n  )\n\nThe next step is to simply compare the two ARDs to confirm results. As this is done programmatically, it is quick to repeat as data continues to accrue.\n\nThere are numerous ways to compare objects in R. We are currently developing a tool in {cards} that will streamline ARD comparison, with sensible defaults for ARDs. Stay tuned! 📺"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-first-tables-1",
+    "href": "slides/02-tables-gtsummary/index.html#ard-first-tables-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD-first Tables",
+    "text": "ARD-first Tables\nSimilar to functions that accept a data frame, the package exports functions with nearly identical APIs that accept an ARD.\n\n\ntbl_summary()\n\ntbl_hierarchical()\n\ntbl_continuous()\n\ntbl_wide_summary()\n\ntbl_ard_summary()\n\ntbl_ard_hierarchical()\n\ntbl_ard_continuous()\n\ntbl_ard_wide_summary()"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-first-tables-2",
+    "href": "slides/02-tables-gtsummary/index.html#ard-first-tables-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD-first Tables",
+    "text": "ARD-first Tables\nWe can use the skills we learned earlier today to create ARDs for gtsummary tables.\n\n\nlibrary(cards)\n\nard &lt;- ard_stack(\n  data = adsl, \n  ard_summary(variables = AGE),\n  ard_tabulate(variables = ETHNIC),\n  ard_tabulate_value(variables = FEMALE),\n  # add these for best-looking tables\n  .attributes = TRUE, \n  .missing = TRUE \n)\nard\n\n\n{cards} data frame: 38 x 9\n\n\n   variable variable_level  context stat_name stat_label   stat\n1       AGE                 summary         N          N    254\n2       AGE                 summary      mean       Mean 75.087\n3       AGE                 summary        sd         SD  8.246\n4       AGE                 summary    median     Median     77\n5       AGE                 summary       p25         Q1     70\n6       AGE                 summary       p75         Q3     81\n7       AGE                 summary       min        Min     51\n8       AGE                 summary       max        Max     89\n9    ETHNIC      HISPANIC… tabulate         n          n     12\n10   ETHNIC      HISPANIC… tabulate         N          N    254\n\n\nℹ 28 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 3 more variables: fmt_fun, warning, error\n\n\n\n\n\nThe .attributes=TRUE call adds column attributes, like labels, to the ARD table, which leads to better defaults by displaying the column labels in the table."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-first-tables-3",
+    "href": "slides/02-tables-gtsummary/index.html#ard-first-tables-3",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD-first Tables",
+    "text": "ARD-first Tables\nWe can simply use the ARD from the previous slide, and pass it to tbl_ard_summary() for a summary table.\n\n\ntbl_ard_summary(ard)\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nOverall1\n\n\n\n\nAge\n77.0 (70.0, 81.0)\n\n\nEthnicity\n\n\n\n\n    HISPANIC OR LATINO\n12 (4.7%)\n\n\n    NOT HISPANIC OR LATINO\n242 (95.3%)\n\n\nFemale\n143 (56.3%)\n\n\n\n1 Median (Q1, Q3); n (%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-first-table-shells",
+    "href": "slides/02-tables-gtsummary/index.html#ard-first-table-shells",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD-first Table Shells",
+    "text": "ARD-first Table Shells\n\nadsl |&gt; \n  labelled::set_variable_labels(AGE = \"Age, years\") |&gt; \n  ard_stack( \n    .by = ARM2,\n    ard_tabulate(variables = ETHNIC),\n    # add these for best-looking tables\n    .attributes = TRUE, \n    .missing = TRUE \n  ) |&gt; \n  cards::update_ard_fmt_fun(stat_names = c(\"n\", \"p\"), fmt_fun = \\(x) \"xx\") |&gt; \n  tbl_ard_summary(\n    by = ARM2,\n    type = all_continuous() ~ \"continuous2\",\n    statistic = all_continuous() ~ c(\"{mean} ({sd})\", \"{min} - {max}\"),\n    missing = \"no\"\n  ) |&gt; \n  modify_header(all_stat_cols() ~ \"**{level}**  \\nN = xx\")\n\n\n\n\nYou can also pass ARDs created with the cards::mock_*() functions if no data are available."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#ard-first-table-shells-output",
+    "href": "slides/02-tables-gtsummary/index.html#ard-first-table-shells-output",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "ARD-first Table Shells",
+    "text": "ARD-first Table Shells\n\n\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nPlacebo\nN = xx1\nXanomeline\nN = xx1\n\n\n\n\nEthnicity\n\n\n\n\n\n\n    HISPANIC OR LATINO\nxx (xx%)\nxx (xx%)\n\n\n    NOT HISPANIC OR LATINO\nxx (xx%)\nxx (xx%)\n\n\n\n1 n (%)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-print-engines-1",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-print-engines-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} print engines",
+    "text": "{gtsummary} print engines"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-to-adopt-gtsummary",
+    "href": "slides/02-tables-gtsummary/index.html#how-to-adopt-gtsummary",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How to Adopt {gtsummary}",
+    "text": "How to Adopt {gtsummary}\nWrite functions\n\nUse {gtsummary} functions to build new functions will be key for adoption.\n\nCreate a theme\n\nA theme is a set of customization preferences that can be easily set and reused.\nThemes control default settings for existing functions\nThemes control more fine-grained customization not available via arguments or helper functions"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#extension-packagecrane",
+    "href": "slides/02-tables-gtsummary/index.html#extension-packagecrane",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Extension Package:{crane} ",
+    "text": "Extension Package:{crane} \nThe first function we added to {crane} was tbl_roche_summary(): a thin wrapper for gtsummary::tbl_summary().\n\n\nContinuous variables default to continuous2.\ntbl_summary(missing*) arguments have been changed to tbl_roche_summary(nonmissing*).\n\nWe highlight non-missing counts over missing counts, which are the default in {gtsummary}\n\nCounts represented by 0 (0%) print as 0.\n\n\n\nlibrary(crane)\n\nadsl |&gt; \n  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, \"REFUSED\")) |&gt; \n  tbl_roche_summary(\n    by = ARM2, \n    include = c(AGE, ETHNIC),\n    nonmissing = \"always\"\n  )"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#extension-packagecrane-output",
+    "href": "slides/02-tables-gtsummary/index.html#extension-packagecrane-output",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Extension Package:{crane} ",
+    "text": "Extension Package:{crane} \n\n\n\nTable 1\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nAge\n\n\n\n\n\n\n    n\n86\n168\n\n\n    Mean (SD)\n75 (9)\n75 (8)\n\n\n    Median\n76\n77\n\n\n    Min - Max\n52 - 89\n51 - 88\n\n\nETHNIC\n\n\n\n\n\n\n    n\n86\n168\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\n    REFUSED\n0\n0"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}? \n\nLab values are summarized by visit and include the change from baseline.\nThis is a simple table that is just a tbl_merge() of the AVAL summary and the CHG summary.\nBut the general structure appears enough times in our catalog, we make it simple for our programmers to create.\n\n\nadlb |&gt; \n  dplyr::filter(PARAM == \"Albumin (g/L)\") |&gt; \n  tbl_baseline_chg(\n    by = \"ARM2\",\n    baseline_level = \"Baseline\",\n    denominator = adsl\n  )"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-1",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}?"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-2",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}?"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-3",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-3",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}?"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-4",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-4",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}?"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#a-pharma-theme-with-crane",
+    "href": "slides/02-tables-gtsummary/index.html#a-pharma-theme-with-crane",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "A pharma theme with {crane}",
+    "text": "A pharma theme with {crane}\nOur theme is implemented in crane::theme_gtsummary_roche()\nPrimary changes include:\n\nSets a custom function for rounding percentages.\nRound all p-values to four decimal places.\nHeaders default to presenting with bold and include N in parenthesis, e.g. 'Placebo  \\n (N = 184)'.\nAll tables are printed with {flextable} and we add Roche-specific styling to the table.\nUpdate the default font, font size, table borders, cell padding, etc. to meet our guidelines."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-5",
+    "href": "slides/02-tables-gtsummary/index.html#what-else-is-in-crane-5",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "What else is in {crane}? ",
+    "text": "What else is in {crane}? \n\n\ntheme_gtsummary_roche()\n\nadsl |&gt; \n  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, \"REFUSED\")) |&gt; \n  tbl_roche_summary(\n    by = ARM2, \n    include = c(AGE, ETHNIC),\n    nonmissing = \"always\"\n  )\n\n\nPlacebo  (N = 86)Xanomeline  (N = 168)Agen86168Mean (SD)75 (9)75 (8)Median7677Min - Max52 - 8951 - 88ETHNICn86168HISPANIC OR LATINO3 (3.5%)9 (5.4%)NOT HISPANIC OR LATINO83 (96.5%)159 (94.6%)REFUSED00"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#cardinal-collaboration",
+    "href": "slides/02-tables-gtsummary/index.html#cardinal-collaboration",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "cardinal collaboration ",
+    "text": "cardinal collaboration \nThe cardinal initiative is an industry collaborative effort under the pharmaverse.\nThe site includes examples for building ARDs and tables from the FDA Standard Safety Tables and Figures Integrated Guide using {cards} and {gtsummary}.\n Let’s Go!"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-cardsgtsummary-framework",
+    "href": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-cardsgtsummary-framework",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How can LLMs help us within the {cards}+{gtsummary} framework?",
+    "text": "How can LLMs help us within the {cards}+{gtsummary} framework?\n\n{gtsummary} is a widely used package, the publicly available LLMs write code out of the box: no additional training needed.\n\n\nAct as a statistical programmer within the pharmaceutical industry, and provide me code to create tables in the R language using the gtsummary package.\nUsing the ADSL data set as an input, please provide the code for creating a demographics table that is split by treatment arm. Include the variables AGE and AGEGR1. AGE is a continuous summary, and include the mean, standard deviation, median and IQR. AGEGR1 is a categorical variable and include the count and percent in the summary."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework",
+    "href": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How can LLMs help us within the ARD framework?",
+    "text": "How can LLMs help us within the ARD framework?\nThe result! (using Gemini)\n# Load necessary packages\n# If you don't have gtsummary installed, uncomment and run:\n# install.packages(\"gtsummary\")\n# install.packages(\"dplyr\") # Often useful with gtsummary for data manipulation\n\nlibrary(gtsummary)\nlibrary(dplyr)\n\n# --- Simulate ADSL Data ---\n# In a real-world scenario, you would load your actual ADSL data.\n# For demonstration purposes, we'll create a dummy ADSL dataset.\nset.seed(123) # for reproducibility\n\nadsl_data &lt;- tibble(\n  USUBJID = paste0(\"SUBJ\", 1:100),\n  TRT01A = sample(c(\"Placebo\", \"Treatment A\", \"Treatment B\"), 100, replace = TRUE, prob = c(0.3, 0.4, 0.3)),\n  AGE = round(rnorm(100, mean = 55, sd = 10), 0),\n  AGEGR1 = cut(AGE,\n               breaks = c(0, 18, 65, Inf),\n               labels = c(\"&lt;18\", \"18-65\", \"&gt;65\"),\n               right = FALSE)\n) %&gt;%\n  # Ensure factors for proper ordering and handling by gtsummary\n  mutate(\n    TRT01A = factor(TRT01A, levels = c(\"Placebo\", \"Treatment A\", \"Treatment B\")),\n    AGEGR1 = factor(AGEGR1, levels = c(\"&lt;18\", \"18-65\", \"&gt;65\"))\n  )\n\n# --- Create the Demographics Table ---\n# Use tbl_summary to create the table, specifying:\n# - data: The ADSL dataset\n# - by: The variable to split the table by (treatment arm)\n# - include: The variables to include in the table\n# - type: How to summarize each variable (continuous vs. categorical)\n# - statistic: The specific statistics to display for each variable type\n\ndemographics_table &lt;-\n  adsl_data %&gt;%\n  tbl_summary(\n    by = TRT01A, # Split the table by treatment arm\n    include = c(AGE, AGEGR1), # Include Age and Age Group variables\n    type = list(\n      AGE ~ \"continuous\",      # Specify AGE as continuous\n      AGEGR1 ~ \"categorical\"   # Specify AGEGR1 as categorical\n    ),\n    statistic = list(\n      # For continuous AGE, include mean (SD) and median (IQR)\n      AGE ~ \"{mean} ({sd})\",      # Mean (Standard Deviation)\n      AGE ~ \"{median} ({p25}, {p75})\", # Median (25th percentile, 75th percentile) - IQR\n      # For categorical AGEGR1, include count (percent)\n      AGEGR1 ~ \"{n} ({p}%)\"\n    ),\n    # Add labels for better readability\n    label = list(\n      AGE ~ \"Age, years\",\n      AGEGR1 ~ \"Age Group, years\"\n    ),\n    # Add a note explaining the statistics\n    missing = \"no\", # Do not show missing values row for this table\n    # Specify options for displaying missing data, formatting, etc.\n    # We are explicitly specifying all statistics for AGE, so we might not need \"all_continuous()\" or \"all_categorical()\",\n    # but they are good for default behavior if not all statistics are overridden.\n    # To combine mean (SD) and median (IQR) into a single row, you would list them separated by a comma\n    # in the statistic argument.\n    digits = all_continuous() ~ 1, # One decimal place for continuous variables\n  ) %&gt;%\n  add_n() %&gt;% # Add column for total N\n  add_p() %&gt;% # Add p-value for group comparison (optional, but good for demographics)\n  modify_header(\n    list(\n      label ~ \"**Characteristic**\",\n      stat_by ~ \"**{level}**\\nN = {n}\" # Customize column headers to show N\n    )\n  ) %&gt;%\n  modify_footnote(\n    update = AGE ~ \"Mean (SD); Median (IQR)\"\n  ) %&gt;%\n  # Add table title\n  modify_caption(\"**Table 1. Demographics by Treatment Arm**\")\n\n# Print the table to see the output\ndemographics_table\n\n# To export the table (e.g., to Word, PDF, HTML):\n# library(flextable) # for Word/PDF output\n# library(gt) # for HTML output (often used with gtsummary)\n\n# Example for Word:\n# demographics_table %&gt;%\n#   as_flex_table() %&gt;%\n#   flextable::save_as_docx(path = \"demographics_table.docx\")\n\n# Example for HTML:\n# demographics_table %&gt;%\n#   as_gt() %&gt;%\n#   gt::gtsave(filename = \"demographics_table.html\")\n\n# Example for RMarkdown/Quarto knitting (table will render directly):\n# You would simply include the 'demographics_table' object in your RMarkdown/Quarto chunk."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-1",
+    "href": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-1",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How can LLMs help us within the ARD framework?",
+    "text": "How can LLMs help us within the ARD framework?\nARDs can be represented in language-agnostic formats like JSON and YAML.\nA summary table has a representation that is readily digestible by your favorite LLM.\n\ndplyr::filter(pharmaverseadam::adsl, SAFFL == \"Y\") |&gt; \n  tbl_summary(\n    include = c(AGE, AGEGR1),\n    type = AGE ~ \"continuous2\",\n    statistic = AGE ~ c(\"{mean} ({sd})\",  \"{median} ({p25}, {p75})\")\n  ) |&gt; \n  gather_ard() |&gt; \n  purrr::pluck(\"tbl_summary\") |&gt; \n  apply_fmt_fun() |&gt; \n  cards::as_nested_list() |&gt; \n  jsonlite::toJSON(pretty = TRUE)"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-1-output",
+    "href": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-1-output",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How can LLMs help us within the ARD framework?",
+    "text": "How can LLMs help us within the ARD framework?\n\n{\n  \"variable\": {\n    \"AGEGR1\": {\n      \"variable_level\": {\n        \"&gt;64\": {\n          \"stat_name\": {\n            \"n\": {\n              \"stat\": [221],\n              \"stat_fmt\": [\"221\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            },\n            \"N\": {\n              \"stat\": [254],\n              \"stat_fmt\": [\"254\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            },\n            \"p\": {\n              \"stat\": [0.8701],\n              \"stat_fmt\": [\"87.0\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            }\n          }\n        },\n        \"18-64\": {\n          \"stat_name\": {\n            \"n\": {\n              \"stat\": [33],\n              \"stat_fmt\": [\"33\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            },\n            \"N\": {\n              \"stat\": [254],\n              \"stat_fmt\": [\"254\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            },\n            \"p\": {\n              \"stat\": [0.1299],\n              \"stat_fmt\": [\"13.0\"],\n              \"warning\": {},\n              \"error\": {},\n              \"context\": [\"tabulate\"]\n            }\n          }\n        }\n      },\n      \"stat_name\": {\n        \"label\": {\n          \"stat\": [\"Pooled Age Group 1\"],\n          \"stat_fmt\": [\"Pooled Age Group 1\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"attributes\"]\n        },\n        \"class\": {\n          \"stat\": [\"character\"],\n          \"stat_fmt\": {},\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"attributes\"]\n        },\n        \"N_obs\": {\n          \"stat\": [254],\n          \"stat_fmt\": [\"254\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"N_miss\": {\n          \"stat\": [0],\n          \"stat_fmt\": [\"0\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"N_nonmiss\": {\n          \"stat\": [254],\n          \"stat_fmt\": [\"254\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"p_miss\": {\n          \"stat\": [0],\n          \"stat_fmt\": [\"0.0\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"p_nonmiss\": {\n          \"stat\": [1],\n          \"stat_fmt\": [\"100\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        }\n      }\n    },\n    \"AGE\": {\n      \"stat_name\": {\n        \"mean\": {\n          \"stat\": [75.0866],\n          \"stat_fmt\": [\"75\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"summary\"]\n        },\n        \"sd\": {\n          \"stat\": [8.2462],\n          \"stat_fmt\": [\"8\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"summary\"]\n        },\n        \"median\": {\n          \"stat\": [77],\n          \"stat_fmt\": [\"77\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"summary\"]\n        },\n        \"p25\": {\n          \"stat\": [70],\n          \"stat_fmt\": [\"70\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"summary\"]\n        },\n        \"p75\": {\n          \"stat\": [81],\n          \"stat_fmt\": [\"81\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"summary\"]\n        },\n        \"label\": {\n          \"stat\": [\"Age\"],\n          \"stat_fmt\": [\"Age\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"attributes\"]\n        },\n        \"class\": {\n          \"stat\": [\"numeric\"],\n          \"stat_fmt\": {},\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"attributes\"]\n        },\n        \"N_obs\": {\n          \"stat\": [254],\n          \"stat_fmt\": [\"254\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"N_miss\": {\n          \"stat\": [0],\n          \"stat_fmt\": [\"0\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"N_nonmiss\": {\n          \"stat\": [254],\n          \"stat_fmt\": [\"254\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"p_miss\": {\n          \"stat\": [0],\n          \"stat_fmt\": [\"0.0\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        },\n        \"p_nonmiss\": {\n          \"stat\": [1],\n          \"stat_fmt\": [\"100\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"missing\"]\n        }\n      }\n    },\n    \"..ard_total_n..\": {\n      \"stat_name\": {\n        \"N\": {\n          \"stat\": [254],\n          \"stat_fmt\": [\"254\"],\n          \"warning\": {},\n          \"error\": {},\n          \"context\": [\"total_n\"]\n        }\n      }\n    }\n  }\n}"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-2",
+    "href": "slides/02-tables-gtsummary/index.html#how-can-llms-help-us-within-the-ard-framework-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "How can LLMs help us within the ARD framework?",
+    "text": "How can LLMs help us within the ARD framework?\nAsk the LLM to write draft summary for you.\n\nBelow you will find a JSON representation of the results in the table. Act as a medical writer working at a pharmaceutical company and write a brief summary of the results.\n\n\n\n\nA total of 254 participants were enrolled in the study, distributed across three treatment arms: Placebo (N=86), Xanomeline High Dose (N=84), and Xanomeline Low Dose (N=84).\nBaseline demographics indicate that participants were generally similar across all treatment groups with respect to age. The mean age was approximately 75 years across the groups, with standard deviations ranging from 7.9 to 8.6 years. Specifically, the mean age (standard deviation) was 75.2 (8.6) years in the Placebo group, 74.4 (7.9) years in the Xanomeline High Dose group, and 75.7 (8.3) years in the Xanomeline Low Dose group. The median ages were also comparable: 76 years (IQR: 69, 82) for Placebo, 76 years (IQR: 70.5, 80) for Xanomeline High Dose, and 77.5 years (IQR: 71, 82) for Xanomeline Low Dose.\nRegarding age groups, the majority of participants in all treatment arms were over 64 years of age. Specifically, the proportion of participants aged &gt;64 years was 83.7% (n=72) in the Placebo group, 86.9% (n=73) in the Xanomeline High Dose group, and 90.5% (n=76) in the Xanomeline Low Dose group. The proportion of participants aged 18-64 years was 16.3% (n=14) in the Placebo group, 13.1% (n=11) in the Xanomeline High Dose group, and 9.5% (n=8) in the Xanomeline Low Dose group. There were no participants under 18 years of age.\nOverall, the demographic characteristics at baseline appear well-balanced across the treatment groups, suggesting that any observed differences in outcomes are less likely to be attributable to baseline age disparities."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#pharmaverse-30-day-cran-downloads",
+    "href": "slides/02-tables-gtsummary/index.html#pharmaverse-30-day-cran-downloads",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{pharmaverse} 30-day CRAN Downloads",
+    "text": "{pharmaverse} 30-day CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#gtsummary-website",
+    "href": "slides/02-tables-gtsummary/index.html#gtsummary-website",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "{gtsummary} website",
+    "text": "{gtsummary} website\nhttp://www.danieldsjoberg.com/gtsummary/"
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#section-2",
+    "href": "slides/02-tables-gtsummary/index.html#section-2",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "",
+    "text": "Package Authors/Contributors\n\nDaniel D. Sjoberg\nJoseph Larmarange\nMichael Curry\nJessica Lavery\nKarissa Whiting\nEmily C. Zabor\nXing Bai\nEsther Drill\nJessica Flynn\nMargie Hannum\nStephanie Lobaugh\nShannon Pileggi\nAmy Tin\nGustavo Zapata Wainberg\n\n\nOther Contributors\n\n@abduazizR, @ablack3, @ABohynDOE, @ABorakati, @adilsonbauhofer, @aghaynes, @ahinton-mmc, @aito123, @akarsteve, @akefley, @albamrt, @albertostefanelli, @alecbiom, @alexandrayas, @alexis-catherine, @AlexZHENGH, @alnajar, @amygimma, @anaavu, @anddis, @andrader, @Andrzej-Andrzej, @angelgar, @arbet003, @arnmayer, @aspina7, @AurelienDasre, @awcm0n, @ayogasekaram, @barretmonchka, @barthelmes, @bc-teixeira, @bcjaeger, @BeauMeche, @benediktclaus, @benwhalley, @berg-michael, @bhattmaulik, @BioYork, @blue-abdur, @brachem-christian, @brianmsm, @browne123, @bwiernik, @bx259, @calebasaraba, @CarolineXGao, @CharlyMarie, @ChongTienGoh, @Chris-M-P, @chrisleitzinger, @cjprobst, @ClaudiaCampani, @clmawhorter, @CodieMonster, @coeusanalytics, @coreysparks, @CorradoLanera, @crystalluckett-sanofi, @ctlamb, @dafxy, @DanChaltiel, @DanielPark-MGH, @davideyre, @davidgohel, @davidkane9, @DavisVaughan, @dax44, @dchiu911, @ddsjoberg, @DeFilippis, @denis-or, @dereksonderegger, @derekstein, @DesiQuintans, @dieuv0, @dimbage, @discoleo, @djbirke, @dmenne, @DrDinhLuong, @edelarua, @edrill, @Eduardo-Auer, @ElfatihHasabo, @emilyvertosick, @eokoshi, @ercbk, @eremingt, @erikvona, @eugenividal, @eweisbrod, @fdehrich, @feizhadj, @fh-jsnider, @fh-mthomson, @FrancoisGhesquiere, @ge-generation, @Generalized, @ghost, @giorgioluciano, @giovannitinervia9, @gjones1219, @gorkang, @GuiMarthe, @gungorMetehan, @hass91, @hescalar, @HichemLa, @hichew22, @hr70, @huftis, @hughjonesd, @iaingallagher, @ilyamusabirov, @IndrajeetPatil, @irene9116, @IsadoraBM, @j-tamad, @jalavery, @jaromilfrossard, @JBarsotti, @jbtov, @jeanmanguy, @jemus42, @jenifav, @jennybc, @JeremyPasco, @jerrodanzalone, @JesseRop, @jflynn264, @jhchou, @jhelvy, @jhk0530, @jjallaire, @jkylearmstrong, @jmbarajas, @jmbarbone, @JoanneF1229, @joelgautschi, @johnryan412, @JohnSodling, @jonasrekdalmathisen, @JonGretar, @jordan49er, @jsavinc, @jthomasmock, @juseer, @jwilliman, @karissawhiting, @karl-an, @kendonB, @kentm4, @klh281, @kmdono02, @kristyrobledo, @kwakuduahc1, @lamberp6, @lamhine, @larmarange, @ledermanr, @leejasme, @leslem, @levossen, @lngdet, @longjp, @lorenzoFabbri, @loukesio, @love520lfh, @lspeetluk, @ltin1214, @ltj-github, @lucavd, @LucyMcGowan, @LuiNov, @lukejenner6, @maciekbanas, @maia-sh, @malcolmbarrett, @mariamaseng, @Marsus1972, @martsobm, @Mathicaa, @matthieu-faron, @maxanes, @mayazadok2, @mbac, @mdidish, @medewitt, @meenakshi-kushwaha, @melindahiggins2000, @MelissaAssel, @Melkiades, @mfansler, @michaelcurry1123, @mikemazzucco, @mlamias, @mljaniczek, @moleps, @monitoringhsd, @motocci, @mrmvergeer, @msberends, @mvuorre, @myamortor, @myensr, @MyKo101, @nalimilan, @ndunnewind, @nikostr, @ningyile, @O16789, @oliviercailloux, @oranwutang, @palantre, @parmsam, @Pascal-Schmidt, @PaulC91, @paulduf, @pedersebastian, @perlatex, @pgseye, @philippemichel, @philsf, @polc1410, @Polperobis, @postgres-newbie, @proshano, @raphidoc, @RaviBot, @rawand-hanna, @rbcavanaugh, @remlapmot, @rich-iannone, @RiversPharmD, @rmgpanw, @roaldarbol, @roman2023, @ryzhu75, @s-j-choi, @sachijay, @saifelayan, @sammo3182, @samrodgersmelnick, @samuele-mercan, @sandhyapc, @sbalci, @sda030, @shah-in-boots, @shannonpileggi, @shaunporwal, @shengchaohou, @ShixiangWang, @simonpcouch, @slb2240, @slobaugh, @spiralparagon, @Spring75xx, @StaffanBetner, @steenharsted, @stenw, @Stephonomon, @storopoli, @stratopopolis, @strengejacke, @szimmer, @tamytsujimoto, @TAOS25, @TarJae, @themichjam, @THIB20, @tibirkrajc, @tjmeyers, @tldrcharlene, @tormodb, @toshifumikuroda, @TPDeramus, @UAB-BST-680, @uakimix, @uriahf, @Valja64, @viola-hilbert, @violet-nova, @vvm02, @will-gt, @xkcococo, @xtimbeau, @yatirbe, @yihunzeleke, @yonicd, @yoursdearboy, @YousufMohammed2002, @yuryzablotski, @zabore, @zachariae, @zaddyzad, @zawkzaw, @zdz2101, @zeyunlu, @zhangkaicr, @zhaohongxin0, @zheer-kejlberg, @zhengnow, @zhonghua723, @zlkrvsm, @zongell-star, and @Zoulf001."
+  },
+  {
+    "objectID": "slides/02-tables-gtsummary/index.html#thank-you",
+    "href": "slides/02-tables-gtsummary/index.html#thank-you",
+    "title": "Clinical Reporting with {gtsummary}",
+    "section": "Thank you",
+    "text": "Thank you\n\n\n\n Ask on stackoverflow.com\n Use the gtsummary tag\n Thousands of posts!\n\n danieldsjoberg.com\n ddsjoberg.bsky.social\n linkedin.com/in/ddsjoberg/\n github.com/ddsjoberg"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#what-are-ards",
+    "href": "slides/01-ARD/index.html#what-are-ards",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "What are ARDs?",
+    "text": "What are ARDs?\n\nDataset that stores key metadata and raw results from analysis\nLong dataset that is 1 record per result value\nMay contained formatted values as well\nThe ARD can be used to to subsequently create tables and figures.\nThe ARD does not describe the layout of the results"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#analysis-results-data-ard",
+    "href": "slides/01-ARD/index.html#analysis-results-data-ard",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Analysis Results Data (ARD)",
+    "text": "Analysis Results Data (ARD)\n\nAfter the initial creation of an ARD, the results can later be re-used again and again for subsequent reporting needs."
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#a-few-notes-about-ards",
+    "href": "slides/01-ARD/index.html#a-few-notes-about-ards",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "A few notes about ARDs",
+    "text": "A few notes about ARDs\n\nARDs give us the opportunity to rethink QC\n\nQC can be focused on the raw value, as well as the formatted display\n\nYou don’t have to waste time trying to match formatting to match QC\nBut…QC will be more sensitive to floating point\n\n\nARDs can be flexibly saved to different file types\n\nFor example: a dataset (rds, xpt, etc) or json file"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#zooming-out-the-analysis-results-standard-ars",
+    "href": "slides/01-ARD/index.html#zooming-out-the-analysis-results-standard-ars",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Zooming Out: The Analysis Results Standard (ARS)",
+    "text": "Zooming Out: The Analysis Results Standard (ARS)\n\n\nObjectives include:\n\nTo leverage analysis results metadata to drive the automation of results\nTo support storage, access, processing, traceability and reproducibility of results\nLearn more at https://www.cdisc.org/events/webinar/analysis-results-standard-public-review"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#proposed-metadata-framework-in-the-ars",
+    "href": "slides/01-ARD/index.html#proposed-metadata-framework-in-the-ars",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Proposed Metadata Framework in the ARS",
+    "text": "Proposed Metadata Framework in the ARS\n\n\nThe ARS provides a metadata-driven infrastructure for analysis"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#proposed-metadata-framework-in-the-ars-1",
+    "href": "slides/01-ARD/index.html#proposed-metadata-framework-in-the-ars-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Proposed Metadata Framework in the ARS",
+    "text": "Proposed Metadata Framework in the ARS\n\n\nThe ARS provides a metadata-driven infrastructure for analysis\n{cards} serves as the engine for the analysis"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-introduction",
+    "href": "slides/01-ARD/index.html#cards-introduction",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Introduction",
+    "text": "{cards}: Introduction\n\nPart of the Pharmaverse\nCollaboration between Roche, GSK, Novartis, Eli Lilly, Pfizer\nContains a variety of utilities for making ARDs\nCan be used within the ARS workflow and separately\n51K downloads per month 🤯"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#data-used-in-examples",
+    "href": "slides/01-ARD/index.html#data-used-in-examples",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Data used in examples",
+    "text": "Data used in examples\nADSL from pharmaverseadam\n\n\nCode\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM))\n\n\nADAE from pharmaverseadam\n\n\nCode\nadae &lt;- pharmaverseadam::adae |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM)) |&gt; \n  dplyr::filter(AESOC %in% unique(AESOC)[1:3]) |&gt; \n  dplyr::group_by(AESOC) |&gt; \n  dplyr::filter(AEDECOD %in% unique(AEDECOD)[1:3]) |&gt; \n  dplyr::ungroup()"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_tabulate",
+    "href": "slides/01-ARD/index.html#cards-ard_tabulate",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_tabulate()",
+    "text": "{cards}: ard_tabulate()\n\n\nincludes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nlibrary(cards)\n\nadsl |&gt; \n  ard_tabulate(\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 6 x 9\n\n\n  variable variable_level  context stat_name stat_label stat\n1   AGEGR1            &gt;64 tabulate         n          n  221\n2   AGEGR1            &gt;64 tabulate         N          N  254\n3   AGEGR1            &gt;64 tabulate         p          % 0.87\n4   AGEGR1          18-64 tabulate         n          n   33\n5   AGEGR1          18-64 tabulate         N          N  254\n6   AGEGR1          18-64 tabulate         p          % 0.13\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_tabulate-1",
+    "href": "slides/01-ARD/index.html#cards-ard_tabulate-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_tabulate()",
+    "text": "{cards}: ard_tabulate()\n\n\nincludes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nadsl |&gt; \n  ard_tabulate(\n    by = ARM2,\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 12 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         n          n   149\n8    ARM2    Xanomeli…   AGEGR1            &gt;64         N          N   168\n9    ARM2    Xanomeli…   AGEGR1            &gt;64         p          % 0.887\n10   ARM2    Xanomeli…   AGEGR1          18-64         n          n    19\n11   ARM2    Xanomeli…   AGEGR1          18-64         N          N   168\n12   ARM2    Xanomeli…   AGEGR1          18-64         p          % 0.113\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_summary",
+    "href": "slides/01-ARD/index.html#cards-ard_summary",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_summary()",
+    "text": "{cards}: ard_summary()\n\n# create ARD with default summary statistics\nadsl |&gt; \n  ard_summary(\n    variables = AGE\n  )\n\n{cards} data frame: 8 x 8\n\n\n  variable context stat_name stat_label   stat fmt_fun\n1      AGE summary         N          N    254       0\n2      AGE summary      mean       Mean 75.087       1\n3      AGE summary        sd         SD  8.246       1\n4      AGE summary    median     Median     77       1\n5      AGE summary       p25         Q1     70       1\n6      AGE summary       p75         Q3     81       1\n7      AGE summary       min        Min     51       1\n8      AGE summary       max        Max     89       1\n\n\nℹ 2 more variables: warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_summary-by-variable",
+    "href": "slides/01-ARD/index.html#cards-ard_summary-by-variable",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_summary() by variable",
+    "text": "{cards}: ard_summary() by variable\n\nby: summary statistics are calculated by all combinations of the by variables, including unobserved factor levels\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2         # stats by treatment arm\n  ) \n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_summary-statistics",
+    "href": "slides/01-ARD/index.html#cards-ard_summary-statistics",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_summary() statistics",
+    "text": "{cards}: ard_summary() statistics\n\nstatistic: specify univariate summary statistics. Accepts any function, base R, from a package, or user-defined.\n\n\ncv &lt;- function(x)  sd(x, na.rm = TRUE)/mean(x, na.rm = TRUE)\n\nadsl |&gt; \n  ard_summary(  \n    variables = AGE,\n    by = ARM2,\n    statistic = ~ list(cv = cv) # customize statistics\n  )\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label  stat\n1   ARM2      Placebo      AGE        cv         cv 0.114\n2   ARM2    Xanomeli…      AGE        cv         cv 0.108\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_summary-statistics-1",
+    "href": "slides/01-ARD/index.html#cards-ard_summary-statistics-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_summary() statistics",
+    "text": "{cards}: ard_summary() statistics\n\nCustomize the statistics returned for each variable\n\n\nadsl |&gt; \n  dplyr::mutate(AGE2 = AGE) |&gt; \n  ard_summary(\n    variables = c(AGE, AGE2),\n    by = ARM2,\n    statistic = list(AGE = list(cv = cv),\n                     AGE2 = continuous_summary_fns(c(\"mean\",\"median\")))\n  )\n\n{cards} data frame: 6 x 10\n\n\n  group1 group1_level variable stat_name stat_label   stat\n1   ARM2      Placebo      AGE        cv         cv  0.114\n2   ARM2      Placebo     AGE2      mean       Mean 75.209\n3   ARM2      Placebo     AGE2    median     Median     76\n4   ARM2    Xanomeli…      AGE        cv         cv  0.108\n5   ARM2    Xanomeli…     AGE2      mean       Mean 75.024\n6   ARM2    Xanomeli…     AGE2    median     Median     77\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_summary-fmt_fun",
+    "href": "slides/01-ARD/index.html#cards-ard_summary-fmt_fun",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_summary() fmt_fun",
+    "text": "{cards}: ard_summary() fmt_fun\n\n\nOverride the default formatting functions\nCan also update later via update_ard_fmt_fun()\n\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2,                               \n    fmt_fun = ~list(mean = 0)                \n  ) |&gt; \n  apply_fmt_fun() # add a character column of rounded results\n\n{cards} data frame: 16 x 11\n\n\n   group1 group1_level variable stat_name stat_label   stat stat_fmt\n1    ARM2      Placebo      AGE         N          N     86       86\n2    ARM2      Placebo      AGE      mean       Mean 75.209       75\n3    ARM2      Placebo      AGE        sd         SD   8.59      8.6\n4    ARM2      Placebo      AGE    median     Median     76     76.0\n5    ARM2      Placebo      AGE       p25         Q1     69     69.0\n6    ARM2      Placebo      AGE       p75         Q3     82     82.0\n7    ARM2      Placebo      AGE       min        Min     52     52.0\n8    ARM2      Placebo      AGE       max        Max     89     89.0\n9    ARM2    Xanomeli…      AGE         N          N    168      168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024       75\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09      8.1\n12   ARM2    Xanomeli…      AGE    median     Median     77     77.0\n13   ARM2    Xanomeli…      AGE       p25         Q1     71     71.0\n14   ARM2    Xanomeli…      AGE       p75         Q3     81     81.0\n15   ARM2    Xanomeli…      AGE       min        Min     51     51.0\n16   ARM2    Xanomeli…      AGE       max        Max     88     88.0\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-other-summary-functions",
+    "href": "slides/01-ARD/index.html#cards-other-summary-functions",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Other Summary Functions",
+    "text": "{cards}: Other Summary Functions\n\nard_tabulate_value(): similar to ard_tabulate(), but for dichotomous tabulations\nard_hierarchical(): similar to ard_tabulate(), but built for nested tabulations, e.g. AE terms within SOC\nard_mvsummary(): similar to ard_summary(), for multivariate summaries. The function accepts other arguments like the full and subsetted (within the by groups) data sets.\nard_missing(): tabulates rates of missingness\n\nThe results from all these functions are entirely compatible with one another, and can be stacked into a single data frame. 🥞"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-other-functions",
+    "href": "slides/01-ARD/index.html#cards-other-functions",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Other Functions",
+    "text": "{cards}: Other Functions\nIn addition to exporting functions to prepare summaries, {cards} exports many utilities for wrangling ARDs and creating new ARDs.\nConstructing: bind_ard(), tidy_as_ard(), nest_for_ard(), check_ard_structure(), and many more\nWrangling: get_ard_statistics(), replace_null_statistic(), etc."
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-stacking-utilities",
+    "href": "slides/01-ARD/index.html#cards-stacking-utilities",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Stacking utilities",
+    "text": "{cards}: Stacking utilities\n\n\ndata and .by are shared by all ard_* calls\nAdditional Options .overall, .missing, .attributes, and .total_n provide even more results\nBy default, summaries of the .by variable are included\n\n\n\nadsl |&gt; \n  ard_stack( \n    .by = ARM2,      \n    ard_summary(variables = AGE, statistic = ~ continuous_summary_fns(c(\"mean\",\"sd\"))), \n    ard_tabulate(variables = AGEGR1, statistic = ~ \"p\")\n  )  \n\n{cards} data frame: 14 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                     mean       Mean 75.209\n2    ARM2      Placebo      AGE                       sd         SD   8.59\n3    ARM2      Placebo   AGEGR1            &gt;64         p          %  0.837\n4    ARM2      Placebo   AGEGR1          18-64         p          %  0.163\n5    ARM2    Xanomeli…      AGE                     mean       Mean 75.024\n6    ARM2    Xanomeli…      AGE                       sd         SD   8.09\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         p          %  0.887\n8    ARM2    Xanomeli…   AGEGR1          18-64         p          %  0.113\n9    &lt;NA&gt;                  ARM2        Placebo         n          n     86\n10   &lt;NA&gt;                  ARM2        Placebo         N          N    254\n11   &lt;NA&gt;                  ARM2        Placebo         p          %  0.339\n12   &lt;NA&gt;                  ARM2      Xanomeli…         n          n    168\n13   &lt;NA&gt;                  ARM2      Xanomeli…         N          N    254\n14   &lt;NA&gt;                  ARM2      Xanomeli…         p          %  0.661\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap",
+    "href": "slides/01-ARD/index.html#quick-recap",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ,\n  variables = \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-1",
+    "href": "slides/01-ARD/index.html#quick-recap-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ARM2,\n  variables = AGE \n)\n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-2",
+    "href": "slides/01-ARD/index.html#quick-recap-2",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ,\n  variables = \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-3",
+    "href": "slides/01-ARD/index.html#quick-recap-3",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ARM2,\n  variables = c(AGEGR1, SEX) \n)\n\n{cards} data frame: 24 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2      Placebo      SEX              F         n          n    53\n8    ARM2      Placebo      SEX              F         N          N    86\n9    ARM2      Placebo      SEX              F         p          % 0.616\n10   ARM2      Placebo      SEX              M         n          n    33\n\n\nℹ 14 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-4",
+    "href": "slides/01-ARD/index.html#quick-recap-4",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  \n  # add ard_* calls here\n  \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-5",
+    "href": "slides/01-ARD/index.html#quick-recap-5",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX))\n)\n\n{cards} data frame: 46 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 36 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#quick-recap-6",
+    "href": "slides/01-ARD/index.html#quick-recap-6",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Quick recap!",
+    "text": "Quick recap!\n\nWe can also add:\n\nOverall summaries for all variables\nTotal N\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX)),\n  .overall = TRUE,\n  .total_n = TRUE\n)\n\n{cards} data frame: 67 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 57 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-hierarchical-summary-functions",
+    "href": "slides/01-ARD/index.html#cards-hierarchical-summary-functions",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Hierarchical Summary Functions",
+    "text": "{cards}: Hierarchical Summary Functions\nFollowing hierarchical summary functions aid in nested tabulations (e.g. AE terms within SOC):\n\nard_hierarchical(): calculating nested subject-level rates\nard_hierarchical_count(): calculating nested event-level counts"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_hierarchical",
+    "href": "slides/01-ARD/index.html#cards-ard_hierarchical",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_hierarchical",
+    "text": "{cards}: ard_hierarchical\n\nThis function specializes in calculating subject-level rates.\n\nRates computed on lowest level variables, nested within others\nid helps to check that no duplicate rows exist within the c(id, variables) columns\ndenominator dictates the denominator for the rates\n\n\n\nadae |&gt; \n  dplyr::slice_tail(n = 1L, by = c(USUBJID, ARM, AESOC, AEDECOD)) |&gt; \n  ard_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = adsl\n  )\n\n{cards} data frame: 81 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name stat_label  stat\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n          n     9\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N          N    86\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p          % 0.105\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n          n     1\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N          N    86\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p          % 0.012\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n          n     3\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N          N    86\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p          % 0.035\n10 TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n          n     3\n\n\nℹ 71 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-ard_hierarchical_count",
+    "href": "slides/01-ARD/index.html#cards-ard_hierarchical_count",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: ard_hierarchical_count",
+    "text": "{cards}: ard_hierarchical_count\n\nThis function specializes in calculating event-level frequencies.\n\n\nadae |&gt; \n  ard_hierarchical_count( \n    variables = c(AESOC, AEDECOD),\n    by = TRT01A\n  )\n\n{cards} data frame: 27 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name stat_label stat\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n          n   10\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n          n    2\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n          n    3\n4  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n          n    3\n5  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n          n   10\n6  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD        FATIGUE         n          n    2\n7  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       ERYTHEMA         n          n   13\n8  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       PRURITUS         n          n   11\n9  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD      PRURITUS…         n          n    0\n10 TRT01A    Xanomeli…  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n          n    3\n\n\nℹ 17 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#hierarchical-summaries-many-ways",
+    "href": "slides/01-ARD/index.html#hierarchical-summaries-many-ways",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Hierarchical summaries many ways",
+    "text": "Hierarchical summaries many ways\n\nDisplays for hierarchical data typically report on each level of the hierarchy (Any AE Overall, by System Organ Class, by Preferred Term)\nThis can mean several calls to the ard_hierarchical_* functions\nFurther, subject-level summaries require a different subset of the data each time. For example, to calculate Overall rates, we need to subset to 1 record per subject in ADAE.\n\n\n\nIs there an easier way?"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-stacking-function-for-ard_hierarchical",
+    "href": "slides/01-ARD/index.html#cards-stacking-function-for-ard_hierarchical",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Stacking function for ard_hierarchical()",
+    "text": "{cards}: Stacking function for ard_hierarchical()\n\n\nard_hierarchical stacking functions simplify this multi-step process into a single step\nThe id argument is used to subset the data along the way\n\n\n\nadae |&gt; \n  ard_stack_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 12 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name stat_label  stat\n1  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n          n    12\n2  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         N          N    86\n3  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         p          %  0.14\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n          n     9\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N          N    86\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p          % 0.105\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n          n     1\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N          N    86\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p          % 0.012\n10 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n          n     3\n11 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N          N    86\n12 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p          % 0.035\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cards-stacking-function-for-ard_hierarchical_count",
+    "href": "slides/01-ARD/index.html#cards-stacking-function-for-ard_hierarchical_count",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cards}: Stacking function for ard_hierarchical_count()",
+    "text": "{cards}: Stacking function for ard_hierarchical_count()\n\n\nBelow is the stacking function for event-level summaries, aligned with ard_hierarchical_count()\n\n\n\nadae |&gt; \n  ard_stack_hierarchical_count(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A, \n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 4 x 13\n\n\n  group1 group1_level group2 group2_level variable variable_level stat_name stat_label stat\n1 TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n          n   15\n2 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n          n   10\n3 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n          n    2\n4 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n          n    3\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#exercise",
+    "href": "slides/01-ARD/index.html#exercise",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "Exercise 🏃‍➡️",
+    "text": "Exercise 🏃‍➡️\n\nNavigate to Workshop Website‍➡️ Exercises‍➡️ 01-ARD.R\nCompute the nested AE tabulations as described.\n\n\n\n\n−+\n10:00"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx",
+    "href": "slides/01-ARD/index.html#cardx",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx}",
+    "text": "{cardx}\n\nExtension of the {cards} package, providing additional functions to create Analysis Results Datasets (ARDs)\nThe {cardx} package exports many ard_*() function for statistical methods."
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-1",
+    "href": "slides/01-ARD/index.html#cardx-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx}",
+    "text": "{cardx}\n\nExports ARD frameworks for statistical analyses from many packages\n\n\n  - {stats}\n  - {car}\n  - {effectsize}\n  - {emmeans}\n  - {geepack}\n  - {lme4}\n  - {parameters}\n  - {smd}\n  - {survey}\n  - {survival}\n\n\nThis list is growing (rather quickly) 🌱"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-t-test-example",
+    "href": "slides/01-ARD/index.html#cardx-t-test-example",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} t-test Example",
+    "text": "{cardx} t-test Example\n\n\nWe see the results like the mean difference, the confidence interval, and p-value as expected.\nAnd we also see the function’s inputs, which is incredibly useful for re-use, e.g. we know that we did not use equal variances.\n\n\n\nadsl |&gt; \n  cardx::ard_stats_t_test(by = ARM2, variables = AGE)\n\n{cards} data frame: 14 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE stats_t_…    estimate  Mean Dif…     0.185\n2    ARM2      AGE stats_t_…   estimate1  Group 1 …    75.209\n3    ARM2      AGE stats_t_…   estimate2  Group 2 …    75.024\n4    ARM2      AGE stats_t_…   statistic  t Statis…     0.166\n5    ARM2      AGE stats_t_…     p.value    p-value     0.868\n6    ARM2      AGE stats_t_…   parameter  Degrees …   162.643\n7    ARM2      AGE stats_t_…    conf.low  CI Lower…     -2.02\n8    ARM2      AGE stats_t_…   conf.high  CI Upper…     2.391\n9    ARM2      AGE stats_t_…      method     method Welch Tw…\n10   ARM2      AGE stats_t_… alternative  alternat… two.sided\n11   ARM2      AGE stats_t_…          mu    H0 Mean         0\n12   ARM2      AGE stats_t_…      paired  Paired t…     FALSE\n13   ARM2      AGE stats_t_…   var.equal  Equal Va…     FALSE\n14   ARM2      AGE stats_t_…  conf.level  CI Confi…      0.95\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-t-test-example-1",
+    "href": "slides/01-ARD/index.html#cardx-t-test-example-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} t-test Example",
+    "text": "{cardx} t-test Example\n\n\nWhat to do if a method you need is not implemented?\nIt’s simple to wrap existing frameworks to customize.\nOne-sample t-test example utilizing cards::ard_summary().\n\n\n\nadsl |&gt; \n  cards::ard_summary(\n    variables = AGE,\n    statistic = everything() ~ list(t_test = \\(x) t.test(x) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(context = \"t_test_one_sample\")\n\n{cards} data frame: 8 x 8\n\n\n  variable   context   stat_name stat_label      stat fmt_fun\n1      AGE t_test_o…    estimate   estimate    75.087       1\n2      AGE t_test_o…   statistic  statistic   145.119       1\n3      AGE t_test_o…     p.value    p.value         0       1\n4      AGE t_test_o…   parameter  parameter       253       1\n5      AGE t_test_o…    conf.low   conf.low    74.068       1\n6      AGE t_test_o…   conf.high  conf.high    76.106       1\n7      AGE t_test_o…      method     method One Samp…    &lt;fn&gt;\n8      AGE t_test_o… alternative  alternat… two.sided    &lt;fn&gt;\n\n\nℹ 2 more variables: warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-t-test-example-2",
+    "href": "slides/01-ARD/index.html#cardx-t-test-example-2",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} t-test Example",
+    "text": "{cardx} t-test Example\n\n\nHow to modify if we need a two-sample test, or more generally accessing other columns in the data frame.\n\n\n\nadsl |&gt; \n  cards::ard_mvsummary(\n    variables = AGE,\n    statistic = \n      ~ list(t_test = \\(x, data, ...) t.test(x ~ data$ARM2) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(group1 = \"ARM2\", context = \"t_test_two_sample\") |&gt; \n  cards::tidy_ard_column_order()\n\n{cards} data frame: 10 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE t_test_t…    estimate   estimate     0.185\n2    ARM2      AGE t_test_t…   estimate1  estimate1    75.209\n3    ARM2      AGE t_test_t…   estimate2  estimate2    75.024\n4    ARM2      AGE t_test_t…   statistic  statistic     0.166\n5    ARM2      AGE t_test_t…     p.value    p.value     0.868\n6    ARM2      AGE t_test_t…   parameter  parameter   162.643\n7    ARM2      AGE t_test_t…    conf.low   conf.low     -2.02\n8    ARM2      AGE t_test_t…   conf.high  conf.high     2.391\n9    ARM2      AGE t_test_t…      method     method Welch Tw…\n10   ARM2      AGE t_test_t… alternative  alternat… two.sided\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-regression",
+    "href": "slides/01-ARD/index.html#cardx-regression",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} Regression",
+    "text": "{cardx} Regression\n\nIncludes functionality to summarize nearly every type of regression model in the R ecosystem:\n\n\nbetareg::betareg(), biglm::bigglm(), brms::brm(), cmprsk::crr(), fixest::feglm(), fixest::femlm(), fixest::feNmlm(), fixest::feols(), gam::gam(), geepack::geeglm(), glmmTMB::glmmTMB(), glmtoolbox::glmgee(), lavaan::lavaan(), lfe::felm(), lme4::glmer.nb(), lme4::glmer(), lme4::lmer(), logitr::logitr(), MASS::glm.nb(), MASS::polr(), mgcv::gam(), mice::mira, mmrm::mmrm(), multgee::nomLORgee(), multgee::ordLORgee(), nnet::multinom(), ordinal::clm(), ordinal::clmm(), parsnip::model_fit, plm::plm(), pscl::hurdle(), pscl::zeroinfl(), rstanarm::stan_glm(), stats::aov(), stats::glm(), stats::lm(), stats::nls(), survey::svycoxph(), survey::svyglm(), survey::svyolr(), survival::cch(), survival::clogit(), survival::coxph(), survival::survreg(), svyVGAM::svy_vglm(), tidycmprsk::crr(), VGAM::vgam(), VGAM::vglm() (and more)"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-regression-example",
+    "href": "slides/01-ARD/index.html#cardx-regression-example",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} Regression Example",
+    "text": "{cardx} Regression Example\n\nlibrary(survival)\n\n# build model\nmod &lt;- pharmaverseadam::adtte_onco |&gt; \n  dplyr::filter(PARAM %in% \"Progression Free Survival\") |&gt;\n  coxph(ggsurvfit::Surv_CNSR() ~ ARM, data = _)\n\n# put model in a summary table\ntbl &lt;- gtsummary::tbl_regression(mod, exponentiate = TRUE) |&gt; \n  gtsummary::add_n(location = c('label', 'level')) |&gt; \n  gtsummary::add_nevent(location = c('label', 'level'))\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN\nEvent N\nHR\n95% CI\np-value\n\n\n\n\nDescription of Planned Arm\n254\n6\n\n\n\n\n\n\n\n\n    Placebo\n86\n3\n—\n—\n\n\n\n\n    Xanomeline High Dose\n84\n2\n3.00\n0.39, 22.9\n0.3\n\n\n    Xanomeline Low Dose\n84\n1\n1.27\n0.11, 14.3\n0.8\n\n\n\nAbbreviations: CI = Confidence Interval, HR = Hazard Ratio"
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#cardx-regression-example-1",
+    "href": "slides/01-ARD/index.html#cardx-regression-example-1",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "{cardx} Regression Example",
+    "text": "{cardx} Regression Example\nThe cardx::ard_regression() does a lot for us in the background.\n\nIdentifies the variable from the regression terms (i.e. groups levels of the same variable)\nIdentifies reference groups from categorical covariates\nFinds variable labels from the source data frames\nKnows the total N of the model, the number of events, and can do the same for each level of categorical variables\nContextually aware of slopes, odds ratios, hazard ratios, and incidence rate ratios\nAnd much much more."
+  },
+  {
+    "objectID": "slides/01-ARD/index.html#when-things-go-wrong",
+    "href": "slides/01-ARD/index.html#when-things-go-wrong",
+    "title": "Analysis Results Datasets (ARDs) in R",
+    "section": "When things go wrong 😱",
+    "text": "When things go wrong 😱\n\nWhat happens when statistics are un-calculable?\n\n\nard_gone_wrong &lt;- \n  adsl |&gt; \n  ard_summary(\n    by = ARM2,\n    variable = AGEGR1,\n    statistic = ~list(kurtosis = \\(x) e1071::kurtosis(x))\n  ) |&gt; \n  cards::replace_null_statistic()\nard_gone_wrong\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label stat   warning     error\n1   ARM2      Placebo   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n2   ARM2    Xanomeli…   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n\n\nℹ 2 more variables: context, fmt_fun\n\n\n\ncards::print_ard_conditions(ard_gone_wrong)\n\n\n\n\nWhere is the statistic? AGEGR1 is character\nEven when there are errors or warnings, we still get the ARD with the expected structure returned.\n\nTHIS IS BIG! There are MANY circumstances, when you are designing TLGs early in a study when you do not have all the data required to calculate every statistic.\nThis allows you to design everything up-front.\n\nWe can also report these warnings and errors back to users. &lt;!CLICK!&gt;"
+  },
+  {
+    "objectID": "license.html",
+    "href": "license.html",
+    "title": "License",
+    "section": "",
+    "text": "This work is licensed under a Creative Commons Attribution 4.0 International License.",
+    "crumbs": [
+      "License"
+    ]
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting",
+    "section": "",
+    "text": "🗓️ November 5, 2025 08:40AM - 09:00AM PST\n📝 Conference Registration",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "index.html#description",
+    "href": "index.html#description",
+    "title": "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting",
+    "section": "Description",
+    "text": "Description\n{gtsummary} has become the most-used R package for clinical tables in the R ecosystem, winning awards from the American Statistical Association and Posit. Building on this foundation, we created {crane}, an open-source extension that facilitates reporting requirements in the pharmaceutical space. Because {crane} and {gtsummary} are built upon Analysis Results Datasets (ARDs), study teams can take advantage of this foundation that streamlines the QC process and allows for simple re-use of calculated results in subsequent reporting.\nIn this session we show how: (1) a vanilla {gtsummary} script instantly upgrades when {crane} is loaded; (2) ARD-based outputs make QC a straightforward operation; (3) LLMs can summarise the language-agnostic ARD results for medical writers in seconds. You’ll leave with a blueprint of how to adapt {crane} for your reporting needs or (or roll your own) and shorten table turnaround on day one.",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "index.html#slides",
+    "href": "index.html#slides",
+    "title": "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting",
+    "section": "Slides",
+    "text": "Slides",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "index.html#instructor",
+    "href": "index.html#instructor",
+    "title": "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting",
+    "section": "Instructor",
+    "text": "Instructor\n\nDaniel D. Sjoberg (he/him) is a Senior Principal Data Scientist at Genentech. Previously, he was a Lead Data Science Manager at the Prostate Cancer Clinical Trials Consortium, and a Senior Biostatistician at Memorial Sloan Kettering Cancer Center in New York City. He enjoys R package development, creating many packages available on CRAN, R-Universe, and GitHub. He’s a co-organizer of rainbowR (a community that supports, promotes and connects LGBTQ+ people who code in the R language) and of the R Medicine Conference. His research interests include adaptive methods in clinical trials, precision medicine, and predictive modeling. Daniel is the winner of the 2021 American Statistical Association (ASA) Innovation in Statistical Programming and Analytics award.",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html",
+    "href": "slides/01-ARD/cards.html",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Part of the Pharmaverse\nCollaboration between Roche, GSK, Novartis, Eli Lilly, Pfizer\nContains a variety of utilities for making ARDs\nCan be used within the ARS workflow and separately\n51K downloads per month 🤯\n\n\n\n\nADSL from pharmaverseadam\n\n\nCode\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM))\n\n\nADAE from pharmaverseadam\n\n\nCode\nadae &lt;- pharmaverseadam::adae |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM)) |&gt; \n  dplyr::filter(AESOC %in% unique(AESOC)[1:3]) |&gt; \n  dplyr::group_by(AESOC) |&gt; \n  dplyr::filter(AEDECOD %in% unique(AEDECOD)[1:3]) |&gt; \n  dplyr::ungroup()\n\n\n\n\n\n\n\nincludes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nlibrary(cards)\n\nadsl |&gt; \n  ard_tabulate(\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 6 x 9\n\n\n  variable variable_level  context stat_name stat_label stat\n1   AGEGR1            &gt;64 tabulate         n          n  221\n2   AGEGR1            &gt;64 tabulate         N          N  254\n3   AGEGR1            &gt;64 tabulate         p          % 0.87\n4   AGEGR1          18-64 tabulate         n          n   33\n5   AGEGR1          18-64 tabulate         N          N  254\n6   AGEGR1          18-64 tabulate         p          % 0.13\n\n\nℹ 3 more variables: fmt_fun, warning, error\n\n\n\n\n\n\n\nincludes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nadsl |&gt; \n  ard_tabulate(\n    by = ARM2,\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 12 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         n          n   149\n8    ARM2    Xanomeli…   AGEGR1            &gt;64         N          N   168\n9    ARM2    Xanomeli…   AGEGR1            &gt;64         p          % 0.887\n10   ARM2    Xanomeli…   AGEGR1          18-64         n          n    19\n11   ARM2    Xanomeli…   AGEGR1          18-64         N          N   168\n12   ARM2    Xanomeli…   AGEGR1          18-64         p          % 0.113\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\n# create ARD with default summary statistics\nadsl |&gt; \n  ard_summary(\n    variables = AGE\n  )\n\n{cards} data frame: 8 x 8\n\n\n  variable context stat_name stat_label   stat fmt_fun\n1      AGE summary         N          N    254       0\n2      AGE summary      mean       Mean 75.087       1\n3      AGE summary        sd         SD  8.246       1\n4      AGE summary    median     Median     77       1\n5      AGE summary       p25         Q1     70       1\n6      AGE summary       p75         Q3     81       1\n7      AGE summary       min        Min     51       1\n8      AGE summary       max        Max     89       1\n\n\nℹ 2 more variables: warning, error\n\n\n\n\n\n\nby: summary statistics are calculated by all combinations of the by variables, including unobserved factor levels\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2         # stats by treatment arm\n  ) \n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nstatistic: specify univariate summary statistics. Accepts any function, base R, from a package, or user-defined.\n\n\ncv &lt;- function(x)  sd(x, na.rm = TRUE)/mean(x, na.rm = TRUE)\n\nadsl |&gt; \n  ard_summary(  \n    variables = AGE,\n    by = ARM2,\n    statistic = ~ list(cv = cv) # customize statistics\n  )\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label  stat\n1   ARM2      Placebo      AGE        cv         cv 0.114\n2   ARM2    Xanomeli…      AGE        cv         cv 0.108\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nCustomize the statistics returned for each variable\n\n\nadsl |&gt; \n  dplyr::mutate(AGE2 = AGE) |&gt; \n  ard_summary(\n    variables = c(AGE, AGE2),\n    by = ARM2,\n    statistic = list(AGE = list(cv = cv),\n                     AGE2 = continuous_summary_fns(c(\"mean\",\"median\")))\n  )\n\n{cards} data frame: 6 x 10\n\n\n  group1 group1_level variable stat_name stat_label   stat\n1   ARM2      Placebo      AGE        cv         cv  0.114\n2   ARM2      Placebo     AGE2      mean       Mean 75.209\n3   ARM2      Placebo     AGE2    median     Median     76\n4   ARM2    Xanomeli…      AGE        cv         cv  0.108\n5   ARM2    Xanomeli…     AGE2      mean       Mean 75.024\n6   ARM2    Xanomeli…     AGE2    median     Median     77\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\n\nOverride the default formatting functions\nCan also update later via update_ard_fmt_fun()\n\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2,                               \n    fmt_fun = ~list(mean = 0)                \n  ) |&gt; \n  apply_fmt_fun() # add a character column of rounded results\n\n{cards} data frame: 16 x 11\n\n\n   group1 group1_level variable stat_name stat_label   stat stat_fmt\n1    ARM2      Placebo      AGE         N          N     86       86\n2    ARM2      Placebo      AGE      mean       Mean 75.209       75\n3    ARM2      Placebo      AGE        sd         SD   8.59      8.6\n4    ARM2      Placebo      AGE    median     Median     76     76.0\n5    ARM2      Placebo      AGE       p25         Q1     69     69.0\n6    ARM2      Placebo      AGE       p75         Q3     82     82.0\n7    ARM2      Placebo      AGE       min        Min     52     52.0\n8    ARM2      Placebo      AGE       max        Max     89     89.0\n9    ARM2    Xanomeli…      AGE         N          N    168      168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024       75\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09      8.1\n12   ARM2    Xanomeli…      AGE    median     Median     77     77.0\n13   ARM2    Xanomeli…      AGE       p25         Q1     71     71.0\n14   ARM2    Xanomeli…      AGE       p75         Q3     81     81.0\n15   ARM2    Xanomeli…      AGE       min        Min     51     51.0\n16   ARM2    Xanomeli…      AGE       max        Max     88     88.0\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nard_tabulate_value(): similar to ard_tabulate(), but for dichotomous tabulations\nard_hierarchical(): similar to ard_tabulate(), but built for nested tabulations, e.g. AE terms within SOC\nard_mvsummary(): similar to ard_summary(), for multivariate summaries. The function accepts other arguments like the full and subsetted (within the by groups) data sets.\nard_missing(): tabulates rates of missingness\n\nThe results from all these functions are entirely compatible with one another, and can be stacked into a single data frame. 🥞\n\n\n\nIn addition to exporting functions to prepare summaries, {cards} exports many utilities for wrangling ARDs and creating new ARDs.\nConstructing: bind_ard(), tidy_as_ard(), nest_for_ard(), check_ard_structure(), and many more\nWrangling: get_ard_statistics(), replace_null_statistic(), etc.\n\n\n\n\n\ndata and .by are shared by all ard_* calls\nAdditional Options .overall, .missing, .attributes, and .total_n provide even more results\nBy default, summaries of the .by variable are included\n\n\n\nadsl |&gt; \n  ard_stack( \n    .by = ARM2,      \n    ard_summary(variables = AGE, statistic = ~ continuous_summary_fns(c(\"mean\",\"sd\"))), \n    ard_tabulate(variables = AGEGR1, statistic = ~ \"p\")\n  )  \n\n{cards} data frame: 14 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                     mean       Mean 75.209\n2    ARM2      Placebo      AGE                       sd         SD   8.59\n3    ARM2      Placebo   AGEGR1            &gt;64         p          %  0.837\n4    ARM2      Placebo   AGEGR1          18-64         p          %  0.163\n5    ARM2    Xanomeli…      AGE                     mean       Mean 75.024\n6    ARM2    Xanomeli…      AGE                       sd         SD   8.09\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         p          %  0.887\n8    ARM2    Xanomeli…   AGEGR1          18-64         p          %  0.113\n9    &lt;NA&gt;                  ARM2        Placebo         n          n     86\n10   &lt;NA&gt;                  ARM2        Placebo         N          N    254\n11   &lt;NA&gt;                  ARM2        Placebo         p          %  0.339\n12   &lt;NA&gt;                  ARM2      Xanomeli…         n          n    168\n13   &lt;NA&gt;                  ARM2      Xanomeli…         N          N    254\n14   &lt;NA&gt;                  ARM2      Xanomeli…         p          %  0.661\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ,\n  variables = \n)\n\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ARM2,\n  variables = AGE \n)\n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ,\n  variables = \n)\n\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ARM2,\n  variables = c(AGEGR1, SEX) \n)\n\n{cards} data frame: 24 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2      Placebo      SEX              F         n          n    53\n8    ARM2      Placebo      SEX              F         N          N    86\n9    ARM2      Placebo      SEX              F         p          % 0.616\n10   ARM2      Placebo      SEX              M         n          n    33\n\n\nℹ 14 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  \n  # add ard_* calls here\n  \n)\n\n\n\n\n\nLet’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX))\n)\n\n{cards} data frame: 46 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 36 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nWe can also add:\n\nOverall summaries for all variables\nTotal N\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX)),\n  .overall = TRUE,\n  .total_n = TRUE\n)\n\n{cards} data frame: 67 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 57 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\nFollowing hierarchical summary functions aid in nested tabulations (e.g. AE terms within SOC):\n\nard_hierarchical(): calculating nested subject-level rates\nard_hierarchical_count(): calculating nested event-level counts\n\n\n\n\n\nThis function specializes in calculating subject-level rates.\n\nRates computed on lowest level variables, nested within others\nid helps to check that no duplicate rows exist within the c(id, variables) columns\ndenominator dictates the denominator for the rates\n\n\n\nadae |&gt; \n  dplyr::slice_tail(n = 1L, by = c(USUBJID, ARM, AESOC, AEDECOD)) |&gt; \n  ard_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = adsl\n  )\n\n{cards} data frame: 81 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p\n10 TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n   stat_label  stat\n1           n     9\n2           N    86\n3           % 0.105\n4           n     1\n5           N    86\n6           % 0.012\n7           n     3\n8           N    86\n9           % 0.035\n10          n     3\n\n\nℹ 71 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nThis function specializes in calculating event-level frequencies.\n\n\nadae |&gt; \n  ard_hierarchical_count( \n    variables = c(AESOC, AEDECOD),\n    by = TRT01A\n  )\n\n{cards} data frame: 27 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n4  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n5  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n6  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD        FATIGUE         n\n7  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       ERYTHEMA         n\n8  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       PRURITUS         n\n9  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD      PRURITUS…         n\n10 TRT01A    Xanomeli…  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n   stat_label stat\n1           n   10\n2           n    2\n3           n    3\n4           n    3\n5           n   10\n6           n    2\n7           n   13\n8           n   11\n9           n    0\n10          n    3\n\n\nℹ 17 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nDisplays for hierarchical data typically report on each level of the hierarchy (Any AE Overall, by System Organ Class, by Preferred Term)\nThis can mean several calls to the ard_hierarchical_* functions\nFurther, subject-level summaries require a different subset of the data each time. For example, to calculate Overall rates, we need to subset to 1 record per subject in ADAE.\n\n\n\nIs there an easier way?\n\n\n\n\n\n\n\nard_hierarchical stacking functions simplify this multi-step process into a single step\nThe id argument is used to subset the data along the way\n\n\n\nadae |&gt; \n  ard_stack_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 12 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n\n2  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         N\n3  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         p\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p\n10 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n11 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N\n12 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p\n   stat_label  stat\n1           n    12\n2           N    86\n3           %  0.14\n4           n     9\n5           N    86\n6           % 0.105\n7           n     1\n8           N    86\n9           % 0.012\n10          n     3\n11          N    86\n12          % 0.035\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\n\nBelow is the stacking function for event-level summaries, aligned with ard_hierarchical_count()\n\n\n\nadae |&gt; \n  ard_stack_hierarchical_count(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A, \n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 4 x 13\n\n\n  group1 group1_level group2 group2_level variable variable_level stat_name\n1 TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n\n2 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n3 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n4 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n  stat_label stat\n1          n   15\n2          n   10\n3          n    2\n4          n    3\n\n\nℹ 4 more variables: context, fmt_fun, warning, error\n\n\n\n\n\n\nNavigate to Workshop Website‍➡️ Exercises‍➡️ 01-ARD.R\nCompute the nested AE tabulations as described.\n\n\n\n\n−+\n10:00\n\n\n\n\n\n\n\nExtension of the {cards} package, providing additional functions to create Analysis Results Datasets (ARDs)\nThe {cardx} package exports many ard_*() function for statistical methods.\n\n\n\n\n\n\n\n\n\n\nExports ARD frameworks for statistical analyses from many packages\n\n\n  - {stats}\n  - {car}\n  - {effectsize}\n  - {emmeans}\n  - {geepack}\n  - {lme4}\n  - {parameters}\n  - {smd}\n  - {survey}\n  - {survival}\n\n\nThis list is growing (rather quickly) 🌱\n\n\n\n\n\n\nWe see the results like the mean difference, the confidence interval, and p-value as expected.\nAnd we also see the function’s inputs, which is incredibly useful for re-use, e.g. we know that we did not use equal variances.\n\n\n\nadsl |&gt; \n  cardx::ard_stats_t_test(by = ARM2, variables = AGE)\n\n{cards} data frame: 14 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE stats_t_…    estimate  Mean Dif…     0.185\n2    ARM2      AGE stats_t_…   estimate1  Group 1 …    75.209\n3    ARM2      AGE stats_t_…   estimate2  Group 2 …    75.024\n4    ARM2      AGE stats_t_…   statistic  t Statis…     0.166\n5    ARM2      AGE stats_t_…     p.value    p-value     0.868\n6    ARM2      AGE stats_t_…   parameter  Degrees …   162.643\n7    ARM2      AGE stats_t_…    conf.low  CI Lower…     -2.02\n8    ARM2      AGE stats_t_…   conf.high  CI Upper…     2.391\n9    ARM2      AGE stats_t_…      method     method Welch Tw…\n10   ARM2      AGE stats_t_… alternative  alternat… two.sided\n11   ARM2      AGE stats_t_…          mu    H0 Mean         0\n12   ARM2      AGE stats_t_…      paired  Paired t…     FALSE\n13   ARM2      AGE stats_t_…   var.equal  Equal Va…     FALSE\n14   ARM2      AGE stats_t_…  conf.level  CI Confi…      0.95\n\n\nℹ 3 more variables: fmt_fun, warning, error\n\n\n\n\n\n\n\nWhat to do if a method you need is not implemented?\nIt’s simple to wrap existing frameworks to customize.\nOne-sample t-test example utilizing cards::ard_summary().\n\n\n\nadsl |&gt; \n  cards::ard_summary(\n    variables = AGE,\n    statistic = everything() ~ list(t_test = \\(x) t.test(x) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(context = \"t_test_one_sample\")\n\n{cards} data frame: 8 x 8\n\n\n  variable   context   stat_name stat_label      stat fmt_fun\n1      AGE t_test_o…    estimate   estimate    75.087       1\n2      AGE t_test_o…   statistic  statistic   145.119       1\n3      AGE t_test_o…     p.value    p.value         0       1\n4      AGE t_test_o…   parameter  parameter       253       1\n5      AGE t_test_o…    conf.low   conf.low    74.068       1\n6      AGE t_test_o…   conf.high  conf.high    76.106       1\n7      AGE t_test_o…      method     method One Samp…    &lt;fn&gt;\n8      AGE t_test_o… alternative  alternat… two.sided    &lt;fn&gt;\n\n\nℹ 2 more variables: warning, error\n\n\n\n\n\n\n\nHow to modify if we need a two-sample test, or more generally accessing other columns in the data frame.\n\n\n\nadsl |&gt; \n  cards::ard_mvsummary(\n    variables = AGE,\n    statistic = \n      ~ list(t_test = \\(x, data, ...) t.test(x ~ data$ARM2) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(group1 = \"ARM2\", context = \"t_test_two_sample\") |&gt; \n  cards::tidy_ard_column_order()\n\n{cards} data frame: 10 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE t_test_t…    estimate   estimate     0.185\n2    ARM2      AGE t_test_t…   estimate1  estimate1    75.209\n3    ARM2      AGE t_test_t…   estimate2  estimate2    75.024\n4    ARM2      AGE t_test_t…   statistic  statistic     0.166\n5    ARM2      AGE t_test_t…     p.value    p.value     0.868\n6    ARM2      AGE t_test_t…   parameter  parameter   162.643\n7    ARM2      AGE t_test_t…    conf.low   conf.low     -2.02\n8    ARM2      AGE t_test_t…   conf.high  conf.high     2.391\n9    ARM2      AGE t_test_t…      method     method Welch Tw…\n10   ARM2      AGE t_test_t… alternative  alternat… two.sided\n\n\nℹ 3 more variables: fmt_fun, warning, error\n\n\n\n\n\n\nIncludes functionality to summarize nearly every type of regression model in the R ecosystem:\n\n\nbetareg::betareg(), biglm::bigglm(), brms::brm(), cmprsk::crr(), fixest::feglm(), fixest::femlm(), fixest::feNmlm(), fixest::feols(), gam::gam(), geepack::geeglm(), glmmTMB::glmmTMB(), glmtoolbox::glmgee(), lavaan::lavaan(), lfe::felm(), lme4::glmer.nb(), lme4::glmer(), lme4::lmer(), logitr::logitr(), MASS::glm.nb(), MASS::polr(), mgcv::gam(), mice::mira, mmrm::mmrm(), multgee::nomLORgee(), multgee::ordLORgee(), nnet::multinom(), ordinal::clm(), ordinal::clmm(), parsnip::model_fit, plm::plm(), pscl::hurdle(), pscl::zeroinfl(), rstanarm::stan_glm(), stats::aov(), stats::glm(), stats::lm(), stats::nls(), survey::svycoxph(), survey::svyglm(), survey::svyolr(), survival::cch(), survival::clogit(), survival::coxph(), survival::survreg(), svyVGAM::svy_vglm(), tidycmprsk::crr(), VGAM::vgam(), VGAM::vglm() (and more)\n\n\n\n\n\nlibrary(survival)\n\n# build model\nmod &lt;- pharmaverseadam::adtte_onco |&gt; \n  dplyr::filter(PARAM %in% \"Progression Free Survival\") |&gt;\n  coxph(ggsurvfit::Surv_CNSR() ~ ARM, data = _)\n\n# put model in a summary table\ntbl &lt;- gtsummary::tbl_regression(mod, exponentiate = TRUE) |&gt; \n  gtsummary::add_n(location = c('label', 'level')) |&gt; \n  gtsummary::add_nevent(location = c('label', 'level'))\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN\nEvent N\nHR\n95% CI\np-value\n\n\n\n\nDescription of Planned Arm\n254\n6\n\n\n\n\n\n\n\n\n    Placebo\n86\n3\n—\n—\n\n\n\n\n    Xanomeline High Dose\n84\n2\n3.00\n0.39, 22.9\n0.3\n\n\n    Xanomeline Low Dose\n84\n1\n1.27\n0.11, 14.3\n0.8\n\n\n\nAbbreviations: CI = Confidence Interval, HR = Hazard Ratio\n\n\n\n\n\n\n\n\n\n\n\nThe cardx::ard_regression() does a lot for us in the background.\n\nIdentifies the variable from the regression terms (i.e. groups levels of the same variable)\nIdentifies reference groups from categorical covariates\nFinds variable labels from the source data frames\nKnows the total N of the model, the number of events, and can do the same for each level of categorical variables\nContextually aware of slopes, odds ratios, hazard ratios, and incidence rate ratios\nAnd much much more.\n\n\n\n\n\nWhat happens when statistics are un-calculable?\n\n\nard_gone_wrong &lt;- \n  adsl |&gt; \n  ard_summary(\n    by = ARM2,\n    variable = AGEGR1,\n    statistic = ~list(kurtosis = \\(x) e1071::kurtosis(x))\n  ) |&gt; \n  cards::replace_null_statistic()\nard_gone_wrong\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label stat   warning     error\n1   ARM2      Placebo   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n2   ARM2    Xanomeli…   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n\n\nℹ 2 more variables: context, fmt_fun\n\n\n\ncards::print_ard_conditions(ard_gone_wrong)\n\n\n\n\nWhere is the statistic? AGEGR1 is character\nEven when there are errors or warnings, we still get the ARD with the expected structure returned.\n\nTHIS IS BIG! There are MANY circumstances, when you are designing TLGs early in a study when you do not have all the data required to calculate every statistic.\nThis allows you to design everything up-front.\n\nWe can also report these warnings and errors back to users. &lt;!CLICK!&gt;"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-introduction",
+    "href": "slides/01-ARD/cards.html#cards-introduction",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Part of the Pharmaverse\nCollaboration between Roche, GSK, Novartis, Eli Lilly, Pfizer\nContains a variety of utilities for making ARDs\nCan be used within the ARS workflow and separately\n51K downloads per month 🤯"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#data-used-in-examples",
+    "href": "slides/01-ARD/cards.html#data-used-in-examples",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "ADSL from pharmaverseadam\n\n\nCode\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM))\n\n\nADAE from pharmaverseadam\n\n\nCode\nadae &lt;- pharmaverseadam::adae |&gt; \n  dplyr::filter(SAFFL==\"Y\") |&gt; \n  dplyr::mutate(ARM2 = ifelse(startsWith(ARM, \"Xanomeline\"), \"Xanomeline\", ARM)) |&gt; \n  dplyr::filter(AESOC %in% unique(AESOC)[1:3]) |&gt; \n  dplyr::group_by(AESOC) |&gt; \n  dplyr::filter(AEDECOD %in% unique(AEDECOD)[1:3]) |&gt; \n  dplyr::ungroup()"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_tabulate",
+    "href": "slides/01-ARD/cards.html#cards-ard_tabulate",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "includes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nlibrary(cards)\n\nadsl |&gt; \n  ard_tabulate(\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 6 x 9\n\n\n  variable variable_level  context stat_name stat_label stat\n1   AGEGR1            &gt;64 tabulate         n          n  221\n2   AGEGR1            &gt;64 tabulate         N          N  254\n3   AGEGR1            &gt;64 tabulate         p          % 0.87\n4   AGEGR1          18-64 tabulate         n          n   33\n5   AGEGR1          18-64 tabulate         N          N  254\n6   AGEGR1          18-64 tabulate         p          % 0.13\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_tabulate-1",
+    "href": "slides/01-ARD/cards.html#cards-ard_tabulate-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "includes n, %, N by default\nAny unobserved levels of the variables will be present in the resulting ARD.\n\n\n\nadsl |&gt; \n  ard_tabulate(\n    by = ARM2,\n    variables = AGEGR1\n  ) \n\n{cards} data frame: 12 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         n          n   149\n8    ARM2    Xanomeli…   AGEGR1            &gt;64         N          N   168\n9    ARM2    Xanomeli…   AGEGR1            &gt;64         p          % 0.887\n10   ARM2    Xanomeli…   AGEGR1          18-64         n          n    19\n11   ARM2    Xanomeli…   AGEGR1          18-64         N          N   168\n12   ARM2    Xanomeli…   AGEGR1          18-64         p          % 0.113\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_summary",
+    "href": "slides/01-ARD/cards.html#cards-ard_summary",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "# create ARD with default summary statistics\nadsl |&gt; \n  ard_summary(\n    variables = AGE\n  )\n\n{cards} data frame: 8 x 8\n\n\n  variable context stat_name stat_label   stat fmt_fun\n1      AGE summary         N          N    254       0\n2      AGE summary      mean       Mean 75.087       1\n3      AGE summary        sd         SD  8.246       1\n4      AGE summary    median     Median     77       1\n5      AGE summary       p25         Q1     70       1\n6      AGE summary       p75         Q3     81       1\n7      AGE summary       min        Min     51       1\n8      AGE summary       max        Max     89       1\n\n\nℹ 2 more variables: warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_summary-by-variable",
+    "href": "slides/01-ARD/cards.html#cards-ard_summary-by-variable",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "by: summary statistics are calculated by all combinations of the by variables, including unobserved factor levels\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2         # stats by treatment arm\n  ) \n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_summary-statistics",
+    "href": "slides/01-ARD/cards.html#cards-ard_summary-statistics",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "statistic: specify univariate summary statistics. Accepts any function, base R, from a package, or user-defined.\n\n\ncv &lt;- function(x)  sd(x, na.rm = TRUE)/mean(x, na.rm = TRUE)\n\nadsl |&gt; \n  ard_summary(  \n    variables = AGE,\n    by = ARM2,\n    statistic = ~ list(cv = cv) # customize statistics\n  )\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label  stat\n1   ARM2      Placebo      AGE        cv         cv 0.114\n2   ARM2    Xanomeli…      AGE        cv         cv 0.108\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_summary-statistics-1",
+    "href": "slides/01-ARD/cards.html#cards-ard_summary-statistics-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Customize the statistics returned for each variable\n\n\nadsl |&gt; \n  dplyr::mutate(AGE2 = AGE) |&gt; \n  ard_summary(\n    variables = c(AGE, AGE2),\n    by = ARM2,\n    statistic = list(AGE = list(cv = cv),\n                     AGE2 = continuous_summary_fns(c(\"mean\",\"median\")))\n  )\n\n{cards} data frame: 6 x 10\n\n\n  group1 group1_level variable stat_name stat_label   stat\n1   ARM2      Placebo      AGE        cv         cv  0.114\n2   ARM2      Placebo     AGE2      mean       Mean 75.209\n3   ARM2      Placebo     AGE2    median     Median     76\n4   ARM2    Xanomeli…      AGE        cv         cv  0.108\n5   ARM2    Xanomeli…     AGE2      mean       Mean 75.024\n6   ARM2    Xanomeli…     AGE2    median     Median     77\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_summary-fmt_fun",
+    "href": "slides/01-ARD/cards.html#cards-ard_summary-fmt_fun",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Override the default formatting functions\nCan also update later via update_ard_fmt_fun()\n\n\n\nadsl |&gt; \n  ard_summary(\n    variables = AGE,\n    by = ARM2,                               \n    fmt_fun = ~list(mean = 0)                \n  ) |&gt; \n  apply_fmt_fun() # add a character column of rounded results\n\n{cards} data frame: 16 x 11\n\n\n   group1 group1_level variable stat_name stat_label   stat stat_fmt\n1    ARM2      Placebo      AGE         N          N     86       86\n2    ARM2      Placebo      AGE      mean       Mean 75.209       75\n3    ARM2      Placebo      AGE        sd         SD   8.59      8.6\n4    ARM2      Placebo      AGE    median     Median     76     76.0\n5    ARM2      Placebo      AGE       p25         Q1     69     69.0\n6    ARM2      Placebo      AGE       p75         Q3     82     82.0\n7    ARM2      Placebo      AGE       min        Min     52     52.0\n8    ARM2      Placebo      AGE       max        Max     89     89.0\n9    ARM2    Xanomeli…      AGE         N          N    168      168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024       75\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09      8.1\n12   ARM2    Xanomeli…      AGE    median     Median     77     77.0\n13   ARM2    Xanomeli…      AGE       p25         Q1     71     71.0\n14   ARM2    Xanomeli…      AGE       p75         Q3     81     81.0\n15   ARM2    Xanomeli…      AGE       min        Min     51     51.0\n16   ARM2    Xanomeli…      AGE       max        Max     88     88.0\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-other-summary-functions",
+    "href": "slides/01-ARD/cards.html#cards-other-summary-functions",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "ard_tabulate_value(): similar to ard_tabulate(), but for dichotomous tabulations\nard_hierarchical(): similar to ard_tabulate(), but built for nested tabulations, e.g. AE terms within SOC\nard_mvsummary(): similar to ard_summary(), for multivariate summaries. The function accepts other arguments like the full and subsetted (within the by groups) data sets.\nard_missing(): tabulates rates of missingness\n\nThe results from all these functions are entirely compatible with one another, and can be stacked into a single data frame. 🥞"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-other-functions",
+    "href": "slides/01-ARD/cards.html#cards-other-functions",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "In addition to exporting functions to prepare summaries, {cards} exports many utilities for wrangling ARDs and creating new ARDs.\nConstructing: bind_ard(), tidy_as_ard(), nest_for_ard(), check_ard_structure(), and many more\nWrangling: get_ard_statistics(), replace_null_statistic(), etc."
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-stacking-utilities",
+    "href": "slides/01-ARD/cards.html#cards-stacking-utilities",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "data and .by are shared by all ard_* calls\nAdditional Options .overall, .missing, .attributes, and .total_n provide even more results\nBy default, summaries of the .by variable are included\n\n\n\nadsl |&gt; \n  ard_stack( \n    .by = ARM2,      \n    ard_summary(variables = AGE, statistic = ~ continuous_summary_fns(c(\"mean\",\"sd\"))), \n    ard_tabulate(variables = AGEGR1, statistic = ~ \"p\")\n  )  \n\n{cards} data frame: 14 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                     mean       Mean 75.209\n2    ARM2      Placebo      AGE                       sd         SD   8.59\n3    ARM2      Placebo   AGEGR1            &gt;64         p          %  0.837\n4    ARM2      Placebo   AGEGR1          18-64         p          %  0.163\n5    ARM2    Xanomeli…      AGE                     mean       Mean 75.024\n6    ARM2    Xanomeli…      AGE                       sd         SD   8.09\n7    ARM2    Xanomeli…   AGEGR1            &gt;64         p          %  0.887\n8    ARM2    Xanomeli…   AGEGR1          18-64         p          %  0.113\n9    &lt;NA&gt;                  ARM2        Placebo         n          n     86\n10   &lt;NA&gt;                  ARM2        Placebo         N          N    254\n11   &lt;NA&gt;                  ARM2        Placebo         p          %  0.339\n12   &lt;NA&gt;                  ARM2      Xanomeli…         n          n    168\n13   &lt;NA&gt;                  ARM2      Xanomeli…         N          N    254\n14   &lt;NA&gt;                  ARM2      Xanomeli…         p          %  0.661\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap",
+    "href": "slides/01-ARD/cards.html#quick-recap",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ,\n  variables = \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-1",
+    "href": "slides/01-ARD/cards.html#quick-recap-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nFirst, we compute the continuous summaries for AGE by ARM2\n\n\n\nard_summary(\n  data = adsl,\n  by = ARM2,\n  variables = AGE \n)\n\n{cards} data frame: 16 x 10\n\n\n   group1 group1_level variable stat_name stat_label   stat\n1    ARM2      Placebo      AGE         N          N     86\n2    ARM2      Placebo      AGE      mean       Mean 75.209\n3    ARM2      Placebo      AGE        sd         SD   8.59\n4    ARM2      Placebo      AGE    median     Median     76\n5    ARM2      Placebo      AGE       p25         Q1     69\n6    ARM2      Placebo      AGE       p75         Q3     82\n7    ARM2      Placebo      AGE       min        Min     52\n8    ARM2      Placebo      AGE       max        Max     89\n9    ARM2    Xanomeli…      AGE         N          N    168\n10   ARM2    Xanomeli…      AGE      mean       Mean 75.024\n11   ARM2    Xanomeli…      AGE        sd         SD   8.09\n12   ARM2    Xanomeli…      AGE    median     Median     77\n13   ARM2    Xanomeli…      AGE       p25         Q1     71\n14   ARM2    Xanomeli…      AGE       p75         Q3     81\n15   ARM2    Xanomeli…      AGE       min        Min     51\n16   ARM2    Xanomeli…      AGE       max        Max     88\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-2",
+    "href": "slides/01-ARD/cards.html#quick-recap-2",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ,\n  variables = \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-3",
+    "href": "slides/01-ARD/cards.html#quick-recap-3",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2)\nNext, we compute the categorical summaries for AGEGR1 and SEX by ARM2\n\n\n\nard_tabulate(\n  data = adsl,\n  by = ARM2,\n  variables = c(AGEGR1, SEX) \n)\n\n{cards} data frame: 24 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label  stat\n1    ARM2      Placebo   AGEGR1            &gt;64         n          n    72\n2    ARM2      Placebo   AGEGR1            &gt;64         N          N    86\n3    ARM2      Placebo   AGEGR1            &gt;64         p          % 0.837\n4    ARM2      Placebo   AGEGR1          18-64         n          n    14\n5    ARM2      Placebo   AGEGR1          18-64         N          N    86\n6    ARM2      Placebo   AGEGR1          18-64         p          % 0.163\n7    ARM2      Placebo      SEX              F         n          n    53\n8    ARM2      Placebo      SEX              F         N          N    86\n9    ARM2      Placebo      SEX              F         p          % 0.616\n10   ARM2      Placebo      SEX              M         n          n    33\n\n\nℹ 14 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-4",
+    "href": "slides/01-ARD/cards.html#quick-recap-4",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  \n  # add ard_* calls here\n  \n)"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-5",
+    "href": "slides/01-ARD/cards.html#quick-recap-5",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Let’s compute summaries for a demography table that includes age (AGE), age group (AGEGR1), and sex (SEX) by treatment (ARM2) in a single ard_stack() call, including:\n\nsummaries by ARM2 as performed above\ncontinuous summaries from part A for AGE\ncategorical summaries from part B for AGEGR1 and SEX\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX))\n)\n\n{cards} data frame: 46 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 36 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#quick-recap-6",
+    "href": "slides/01-ARD/cards.html#quick-recap-6",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "We can also add:\n\nOverall summaries for all variables\nTotal N\n\n\n\nard_stack(\n  data = adsl,\n  .by = ARM2,\n  ard_summary(variables = AGE),\n  ard_tabulate(variables = c(AGEGR1, SEX)),\n  .overall = TRUE,\n  .total_n = TRUE\n)\n\n{cards} data frame: 67 x 11\n\n\n   group1 group1_level variable variable_level stat_name stat_label   stat\n1    ARM2      Placebo      AGE                        N          N     86\n2    ARM2      Placebo      AGE                     mean       Mean 75.209\n3    ARM2      Placebo      AGE                       sd         SD   8.59\n4    ARM2      Placebo      AGE                   median     Median     76\n5    ARM2      Placebo      AGE                      p25         Q1     69\n6    ARM2      Placebo      AGE                      p75         Q3     82\n7    ARM2      Placebo      AGE                      min        Min     52\n8    ARM2      Placebo      AGE                      max        Max     89\n9    ARM2      Placebo   AGEGR1            &gt;64         n          n     72\n10   ARM2      Placebo   AGEGR1            &gt;64         N          N     86\n\n\nℹ 57 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-hierarchical-summary-functions",
+    "href": "slides/01-ARD/cards.html#cards-hierarchical-summary-functions",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Following hierarchical summary functions aid in nested tabulations (e.g. AE terms within SOC):\n\nard_hierarchical(): calculating nested subject-level rates\nard_hierarchical_count(): calculating nested event-level counts"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_hierarchical",
+    "href": "slides/01-ARD/cards.html#cards-ard_hierarchical",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "This function specializes in calculating subject-level rates.\n\nRates computed on lowest level variables, nested within others\nid helps to check that no duplicate rows exist within the c(id, variables) columns\ndenominator dictates the denominator for the rates\n\n\n\nadae |&gt; \n  dplyr::slice_tail(n = 1L, by = c(USUBJID, ARM, AESOC, AEDECOD)) |&gt; \n  ard_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = adsl\n  )\n\n{cards} data frame: 81 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p\n10 TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n   stat_label  stat\n1           n     9\n2           N    86\n3           % 0.105\n4           n     1\n5           N    86\n6           % 0.012\n7           n     3\n8           N    86\n9           % 0.035\n10          n     3\n\n\nℹ 71 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-ard_hierarchical_count",
+    "href": "slides/01-ARD/cards.html#cards-ard_hierarchical_count",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "This function specializes in calculating event-level frequencies.\n\n\nadae |&gt; \n  ard_hierarchical_count( \n    variables = c(AESOC, AEDECOD),\n    by = TRT01A\n  )\n\n{cards} data frame: 27 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n2  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n3  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n4  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n5  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD      APPLICAT…         n\n6  TRT01A      Placebo  AESOC    GENERAL …  AEDECOD        FATIGUE         n\n7  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       ERYTHEMA         n\n8  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD       PRURITUS         n\n9  TRT01A      Placebo  AESOC    SKIN AND…  AEDECOD      PRURITUS…         n\n10 TRT01A    Xanomeli…  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n   stat_label stat\n1           n   10\n2           n    2\n3           n    3\n4           n    3\n5           n   10\n6           n    2\n7           n   13\n8           n   11\n9           n    0\n10          n    3\n\n\nℹ 17 more rows\n\n\nℹ Use `print(n = ...)` to see more rows\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#hierarchical-summaries-many-ways",
+    "href": "slides/01-ARD/cards.html#hierarchical-summaries-many-ways",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Displays for hierarchical data typically report on each level of the hierarchy (Any AE Overall, by System Organ Class, by Preferred Term)\nThis can mean several calls to the ard_hierarchical_* functions\nFurther, subject-level summaries require a different subset of the data each time. For example, to calculate Overall rates, we need to subset to 1 record per subject in ADAE.\n\n\n\nIs there an easier way?"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-stacking-function-for-ard_hierarchical",
+    "href": "slides/01-ARD/cards.html#cards-stacking-function-for-ard_hierarchical",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "ard_hierarchical stacking functions simplify this multi-step process into a single step\nThe id argument is used to subset the data along the way\n\n\n\nadae |&gt; \n  ard_stack_hierarchical(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A,\n    id = USUBJID,\n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 12 x 13\n\n\n   group1 group1_level group2 group2_level variable variable_level stat_name\n1  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n\n2  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         N\n3  TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         p\n4  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n5  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         N\n6  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         p\n7  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n8  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         N\n9  TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         p\n10 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n11 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         N\n12 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         p\n   stat_label  stat\n1           n    12\n2           N    86\n3           %  0.14\n4           n     9\n5           N    86\n6           % 0.105\n7           n     1\n8           N    86\n9           % 0.012\n10          n     3\n11          N    86\n12          % 0.035\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cards-stacking-function-for-ard_hierarchical_count",
+    "href": "slides/01-ARD/cards.html#cards-stacking-function-for-ard_hierarchical_count",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Below is the stacking function for event-level summaries, aligned with ard_hierarchical_count()\n\n\n\nadae |&gt; \n  ard_stack_hierarchical_count(\n    variables = c(AESOC, AEDECOD),\n    by = TRT01A, \n    denominator = pharmaverseadam::adsl\n  )\n\n\n\n{cards} data frame: 4 x 13\n\n\n  group1 group1_level group2 group2_level variable variable_level stat_name\n1 TRT01A      Placebo   &lt;NA&gt;                 AESOC      GASTROIN…         n\n2 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      DIARRHOEA         n\n3 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD      HIATUS H…         n\n4 TRT01A      Placebo  AESOC    GASTROIN…  AEDECOD       VOMITING         n\n  stat_label stat\n1          n   15\n2          n   10\n3          n    2\n4          n    3\n\n\nℹ 4 more variables: context, fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#exercise",
+    "href": "slides/01-ARD/cards.html#exercise",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Navigate to Workshop Website‍➡️ Exercises‍➡️ 01-ARD.R\nCompute the nested AE tabulations as described.\n\n\n\n\n−+\n10:00"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx",
+    "href": "slides/01-ARD/cards.html#cardx",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Extension of the {cards} package, providing additional functions to create Analysis Results Datasets (ARDs)\nThe {cardx} package exports many ard_*() function for statistical methods."
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-1",
+    "href": "slides/01-ARD/cards.html#cardx-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Exports ARD frameworks for statistical analyses from many packages\n\n\n  - {stats}\n  - {car}\n  - {effectsize}\n  - {emmeans}\n  - {geepack}\n  - {lme4}\n  - {parameters}\n  - {smd}\n  - {survey}\n  - {survival}\n\n\nThis list is growing (rather quickly) 🌱"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-t-test-example",
+    "href": "slides/01-ARD/cards.html#cardx-t-test-example",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "We see the results like the mean difference, the confidence interval, and p-value as expected.\nAnd we also see the function’s inputs, which is incredibly useful for re-use, e.g. we know that we did not use equal variances.\n\n\n\nadsl |&gt; \n  cardx::ard_stats_t_test(by = ARM2, variables = AGE)\n\n{cards} data frame: 14 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE stats_t_…    estimate  Mean Dif…     0.185\n2    ARM2      AGE stats_t_…   estimate1  Group 1 …    75.209\n3    ARM2      AGE stats_t_…   estimate2  Group 2 …    75.024\n4    ARM2      AGE stats_t_…   statistic  t Statis…     0.166\n5    ARM2      AGE stats_t_…     p.value    p-value     0.868\n6    ARM2      AGE stats_t_…   parameter  Degrees …   162.643\n7    ARM2      AGE stats_t_…    conf.low  CI Lower…     -2.02\n8    ARM2      AGE stats_t_…   conf.high  CI Upper…     2.391\n9    ARM2      AGE stats_t_…      method     method Welch Tw…\n10   ARM2      AGE stats_t_… alternative  alternat… two.sided\n11   ARM2      AGE stats_t_…          mu    H0 Mean         0\n12   ARM2      AGE stats_t_…      paired  Paired t…     FALSE\n13   ARM2      AGE stats_t_…   var.equal  Equal Va…     FALSE\n14   ARM2      AGE stats_t_…  conf.level  CI Confi…      0.95\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-t-test-example-1",
+    "href": "slides/01-ARD/cards.html#cardx-t-test-example-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "What to do if a method you need is not implemented?\nIt’s simple to wrap existing frameworks to customize.\nOne-sample t-test example utilizing cards::ard_summary().\n\n\n\nadsl |&gt; \n  cards::ard_summary(\n    variables = AGE,\n    statistic = everything() ~ list(t_test = \\(x) t.test(x) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(context = \"t_test_one_sample\")\n\n{cards} data frame: 8 x 8\n\n\n  variable   context   stat_name stat_label      stat fmt_fun\n1      AGE t_test_o…    estimate   estimate    75.087       1\n2      AGE t_test_o…   statistic  statistic   145.119       1\n3      AGE t_test_o…     p.value    p.value         0       1\n4      AGE t_test_o…   parameter  parameter       253       1\n5      AGE t_test_o…    conf.low   conf.low    74.068       1\n6      AGE t_test_o…   conf.high  conf.high    76.106       1\n7      AGE t_test_o…      method     method One Samp…    &lt;fn&gt;\n8      AGE t_test_o… alternative  alternat… two.sided    &lt;fn&gt;\n\n\nℹ 2 more variables: warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-t-test-example-2",
+    "href": "slides/01-ARD/cards.html#cardx-t-test-example-2",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "How to modify if we need a two-sample test, or more generally accessing other columns in the data frame.\n\n\n\nadsl |&gt; \n  cards::ard_mvsummary(\n    variables = AGE,\n    statistic = \n      ~ list(t_test = \\(x, data, ...) t.test(x ~ data$ARM2) |&gt; broom::tidy())\n  ) |&gt; \n  dplyr::mutate(group1 = \"ARM2\", context = \"t_test_two_sample\") |&gt; \n  cards::tidy_ard_column_order()\n\n{cards} data frame: 10 x 9\n\n\n   group1 variable   context   stat_name stat_label      stat\n1    ARM2      AGE t_test_t…    estimate   estimate     0.185\n2    ARM2      AGE t_test_t…   estimate1  estimate1    75.209\n3    ARM2      AGE t_test_t…   estimate2  estimate2    75.024\n4    ARM2      AGE t_test_t…   statistic  statistic     0.166\n5    ARM2      AGE t_test_t…     p.value    p.value     0.868\n6    ARM2      AGE t_test_t…   parameter  parameter   162.643\n7    ARM2      AGE t_test_t…    conf.low   conf.low     -2.02\n8    ARM2      AGE t_test_t…   conf.high  conf.high     2.391\n9    ARM2      AGE t_test_t…      method     method Welch Tw…\n10   ARM2      AGE t_test_t… alternative  alternat… two.sided\n\n\nℹ 3 more variables: fmt_fun, warning, error"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-regression",
+    "href": "slides/01-ARD/cards.html#cardx-regression",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "Includes functionality to summarize nearly every type of regression model in the R ecosystem:\n\n\nbetareg::betareg(), biglm::bigglm(), brms::brm(), cmprsk::crr(), fixest::feglm(), fixest::femlm(), fixest::feNmlm(), fixest::feols(), gam::gam(), geepack::geeglm(), glmmTMB::glmmTMB(), glmtoolbox::glmgee(), lavaan::lavaan(), lfe::felm(), lme4::glmer.nb(), lme4::glmer(), lme4::lmer(), logitr::logitr(), MASS::glm.nb(), MASS::polr(), mgcv::gam(), mice::mira, mmrm::mmrm(), multgee::nomLORgee(), multgee::ordLORgee(), nnet::multinom(), ordinal::clm(), ordinal::clmm(), parsnip::model_fit, plm::plm(), pscl::hurdle(), pscl::zeroinfl(), rstanarm::stan_glm(), stats::aov(), stats::glm(), stats::lm(), stats::nls(), survey::svycoxph(), survey::svyglm(), survey::svyolr(), survival::cch(), survival::clogit(), survival::coxph(), survival::survreg(), svyVGAM::svy_vglm(), tidycmprsk::crr(), VGAM::vgam(), VGAM::vglm() (and more)"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-regression-example",
+    "href": "slides/01-ARD/cards.html#cardx-regression-example",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "library(survival)\n\n# build model\nmod &lt;- pharmaverseadam::adtte_onco |&gt; \n  dplyr::filter(PARAM %in% \"Progression Free Survival\") |&gt;\n  coxph(ggsurvfit::Surv_CNSR() ~ ARM, data = _)\n\n# put model in a summary table\ntbl &lt;- gtsummary::tbl_regression(mod, exponentiate = TRUE) |&gt; \n  gtsummary::add_n(location = c('label', 'level')) |&gt; \n  gtsummary::add_nevent(location = c('label', 'level'))\n\n\n\n\n\n\n\n\n\n\nCharacteristic\nN\nEvent N\nHR\n95% CI\np-value\n\n\n\n\nDescription of Planned Arm\n254\n6\n\n\n\n\n\n\n\n\n    Placebo\n86\n3\n—\n—\n\n\n\n\n    Xanomeline High Dose\n84\n2\n3.00\n0.39, 22.9\n0.3\n\n\n    Xanomeline Low Dose\n84\n1\n1.27\n0.11, 14.3\n0.8\n\n\n\nAbbreviations: CI = Confidence Interval, HR = Hazard Ratio"
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#cardx-regression-example-1",
+    "href": "slides/01-ARD/cards.html#cardx-regression-example-1",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "The cardx::ard_regression() does a lot for us in the background.\n\nIdentifies the variable from the regression terms (i.e. groups levels of the same variable)\nIdentifies reference groups from categorical covariates\nFinds variable labels from the source data frames\nKnows the total N of the model, the number of events, and can do the same for each level of categorical variables\nContextually aware of slopes, odds ratios, hazard ratios, and incidence rate ratios\nAnd much much more."
+  },
+  {
+    "objectID": "slides/01-ARD/cards.html#when-things-go-wrong",
+    "href": "slides/01-ARD/cards.html#when-things-go-wrong",
+    "title": "ARDs using {cards}",
+    "section": "",
+    "text": "What happens when statistics are un-calculable?\n\n\nard_gone_wrong &lt;- \n  adsl |&gt; \n  ard_summary(\n    by = ARM2,\n    variable = AGEGR1,\n    statistic = ~list(kurtosis = \\(x) e1071::kurtosis(x))\n  ) |&gt; \n  cards::replace_null_statistic()\nard_gone_wrong\n\n{cards} data frame: 2 x 10\n\n\n  group1 group1_level variable stat_name stat_label stat   warning     error\n1   ARM2      Placebo   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n2   ARM2    Xanomeli…   AGEGR1  kurtosis   kurtosis   NA argument… non-nume…\n\n\nℹ 2 more variables: context, fmt_fun\n\n\n\ncards::print_ard_conditions(ard_gone_wrong)\n\n\n\n\nWhere is the statistic? AGEGR1 is character\nEven when there are errors or warnings, we still get the ARD with the expected structure returned.\n\nTHIS IS BIG! There are MANY circumstances, when you are designing TLGs early in a study when you do not have all the data required to calculate every statistic.\nThis allows you to design everything up-front.\n\nWe can also report these warnings and errors back to users. &lt;!CLICK!&gt;"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html",
+    "href": "slides/01-ARD/intro_to_ards.html",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "",
+    "text": "Dataset that stores key metadata and raw results from analysis\nLong dataset that is 1 record per result value\nMay contained formatted values as well\nThe ARD can be used to to subsequently create tables and figures.\nThe ARD does not describe the layout of the results"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#what-are-ards",
+    "href": "slides/01-ARD/intro_to_ards.html#what-are-ards",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "",
+    "text": "Dataset that stores key metadata and raw results from analysis\nLong dataset that is 1 record per result value\nMay contained formatted values as well\nThe ARD can be used to to subsequently create tables and figures.\nThe ARD does not describe the layout of the results"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#analysis-results-data-ard",
+    "href": "slides/01-ARD/intro_to_ards.html#analysis-results-data-ard",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "Analysis Results Data (ARD)",
+    "text": "Analysis Results Data (ARD)\n\nAfter the initial creation of an ARD, the results can later be re-used again and again for subsequent reporting needs."
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#a-few-notes-about-ards",
+    "href": "slides/01-ARD/intro_to_ards.html#a-few-notes-about-ards",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "A few notes about ARDs",
+    "text": "A few notes about ARDs\n\n\nARDs give us the opportunity to rethink QC\n\nQC can be focused on the raw value, as well as the formatted display\n\nYou don’t have to waste time trying to match formatting to match QC\nBut…QC will be more sensitive to floating point\n\n\nARDs can be flexibly saved to different file types\n\nFor example: a dataset (rds, xpt, etc) or json file"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#zooming-out-the-analysis-results-standard-ars",
+    "href": "slides/01-ARD/intro_to_ards.html#zooming-out-the-analysis-results-standard-ars",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "Zooming Out: The Analysis Results Standard (ARS)",
+    "text": "Zooming Out: The Analysis Results Standard (ARS)\n\n\n\n\n\n\nObjectives include:\n\nTo leverage analysis results metadata to drive the automation of results\nTo support storage, access, processing, traceability and reproducibility of results\nLearn more at https://www.cdisc.org/events/webinar/analysis-results-standard-public-review"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#proposed-metadata-framework-in-the-ars",
+    "href": "slides/01-ARD/intro_to_ards.html#proposed-metadata-framework-in-the-ars",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "Proposed Metadata Framework in the ARS",
+    "text": "Proposed Metadata Framework in the ARS\n\n\n\n\n\n\nThe ARS provides a metadata-driven infrastructure for analysis"
+  },
+  {
+    "objectID": "slides/01-ARD/intro_to_ards.html#proposed-metadata-framework-in-the-ars-1",
+    "href": "slides/01-ARD/intro_to_ards.html#proposed-metadata-framework-in-the-ars-1",
+    "title": "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}",
+    "section": "Proposed Metadata Framework in the ARS",
+    "text": "Proposed Metadata Framework in the ARS\n\n\n\n\n\n\nThe ARS provides a metadata-driven infrastructure for analysis\n{cards} serves as the engine for the analysis"
+  }
+]
