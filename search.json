@@ -32,7 +32,7 @@
     "href": "slides/index.html#gtsummary-tables",
     "title": "Beyond {gtsummary}",
     "section": "{gtsummary} Tables ",
-    "text": "{gtsummary} Tables \nWe will review the following summary table.\n\ntbl_summary()\ntbl_hierarchical()\n\n\nOther functions helpful functions we’re not covering:\n\n\ntbl_hierarchical_count(): similar to tbl_hierarchical() for counts instead of rates\ntbl_cross(): cross tabulations\ntbl_continuous(): summarizing continuous variables by 2 categorical variables\ntbl_wide_summary(): similar to tbl_summary() but statistics are presented in separate columns\nmany more!"
+    "text": "{gtsummary} Tables \nWe will review briefly just one summary table function.\n\ntbl_summary()\n\n\nOther functions helpful functions we’re not covering:\n\n\ntbl_hierarchical(): Summarize AE, Con Meds, and other similar rates\ntbl_hierarchical_count(): similar to tbl_hierarchical() for counts instead of rates\ntbl_cross(): cross tabulations\ntbl_continuous(): summarizing continuous variables by 2 categorical variables\ntbl_wide_summary(): similar to tbl_summary() but statistics are presented in separate columns\nmany more!"
   },
   {
     "objectID": "slides/index.html#basic-tbl_summary",
@@ -133,11 +133,11 @@
     "text": "{gtsummary} print engines"
   },
   {
-    "objectID": "slides/index.html#gtsummary-cran-downloads",
-    "href": "slides/index.html#gtsummary-cran-downloads",
+    "objectID": "slides/index.html#monthly-gtsummary-cran-downloads",
+    "href": "slides/index.html#monthly-gtsummary-cran-downloads",
     "title": "Beyond {gtsummary}",
-    "section": "{gtsummary CRAN Downloads",
-    "text": "{gtsummary CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
+    "section": "Monthly {gtsummary} CRAN Downloads",
+    "text": "Monthly {gtsummary} CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
   },
   {
     "objectID": "slides/index.html#finally-all-about-crane",
@@ -165,7 +165,7 @@
     "href": "slides/index.html#extending-with-new-functions",
     "title": "Beyond {gtsummary}",
     "section": "Extending with New Functions ",
-    "text": "Extending with New Functions \n\nLab values are summarized by visit and include the change from baseline.\nThis is a simple table that is just a tbl_merge() of the AVAL summary and the CHG summary.\nBut the general structure appears enough times in our catalog, we make it simple for our programmers to create.\n\n\nlibrary(crane)\n\nadlb |&gt; \n  dplyr::filter(PARAM == \"Albumin (g/L)\") |&gt; \n  tbl_baseline_chg(\n    by = \"ARM2\",\n    baseline_level = \"Baseline\",\n    denominator = adsl\n  )"
+    "text": "Extending with New Functions \n\nLab values are summarized by visit and include the change from baseline.\nThis is a simple table that is just a tbl_merge() of the AVAL summary and the CHG summary.\nBut the general structure appears enough times in our catalog, we make it simple for our programmers to create.\n\n\nlibrary(crane)\n\nadlb |&gt; \n  dplyr::filter(PARAM == \"Albumin (g/L)\") |&gt; \n  tbl_baseline_chg(\n    by = \"ARM\",\n    baseline_level = \"Baseline\",\n    denominator = adsl\n  )"
   },
   {
     "objectID": "slides/index.html#extending-with-new-functions-1",
@@ -200,7 +200,7 @@
     "href": "slides/index.html#create-a-company-theme",
     "title": "Beyond {gtsummary}",
     "section": "Create a Company Theme ",
-    "text": "Create a Company Theme \nOur theme is implemented in crane::theme_gtsummary_roche()\nPrimary changes include:\n\nSets a custom function for rounding percentages.\nRound all p-values to four decimal places.\nHeaders default to presenting with bold and include N in parenthesis, e.g. 'Placebo  \\n (N = 184)'.\nAll tables are printed with {flextable} and we add Roche-specific styling to the table.\nUpdate the default font, font size, table borders, cell padding, etc. to meet our guidelines."
+    "text": "Create a Company Theme \nOur theme is implemented in crane::theme_gtsummary_roche()\nPrimary changes include:\n\nSets a custom function for rounding percentages.\nRound all p-values to four decimal places.\nHeaders default to include the N in parenthesis without bold, e.g. 'Placebo  \\n (N = 184)'.\nAll tables are printed with {flextable} and we add Roche-specific styling to the table.\n\nUpdate the default font, font size, table borders, cell padding, etc. to meet our guidelines."
   },
   {
     "objectID": "slides/index.html#create-a-company-theme-1",
@@ -214,7 +214,7 @@
     "href": "slides/index.html#extend-with-ard-first-functionality",
     "title": "Beyond {gtsummary}",
     "section": "Extend with ARD-first Functionality ",
-    "text": "Extend with ARD-first Functionality \nWe didn’t have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.\nThe {gtsummary} package also supports creating tables using ARDs (Analysis Results Datasets).\nData ➡️ ARD ➡️ Table\nThis method is particularly useful for efficacy tables, since they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.\nCheck out the ARD-first Vignette for a detailed walk through."
+    "text": "Extend with ARD-first Functionality \n\nWe don’t have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.\nThe {gtsummary} package supports creating tables using ARDs (Analysis Results Datasets).\n\nData ➡️ ARD ➡️ Table\n\nThis method is particularly useful for efficacy tables, as they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.\nReview the ARD-first Vignette for a detailed walk through."
   },
   {
     "objectID": "slides/index.html#extend-with-ard-first-functionality-1",
@@ -222,6 +222,13 @@
     "title": "Beyond {gtsummary}",
     "section": "Extend with ARD-first Functionality ",
     "text": "Extend with ARD-first Functionality \n\ntbl_survfit_times(\n  data = adtte, \n  times = 12, \n  by = \"ARM2\", \n  label = \"Month {time}\"\n)\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nMonth 12\n\n\n\n\n\n\n    Patients remaining at risk\n5\n6\n\n\n    Event Free Rate (%)\n80.0%\n100.0%\n\n\n    95% CI\n51.6%, 100.0%\n100.0%, 100.0%"
+  },
+  {
+    "objectID": "slides/index.html#section-1",
+    "href": "slides/index.html#section-1",
+    "title": "Beyond {gtsummary}",
+    "section": "",
+    "text": "When it comes time to build your custom tables, use the {crane} package as a blueprint."
   },
   {
     "objectID": "index.html",
