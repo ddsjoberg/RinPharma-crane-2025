@@ -1,12 +1,5 @@
 [
   {
-    "objectID": "slides/index.html#all-about-crane",
-    "href": "slides/index.html#all-about-crane",
-    "title": "Beyond {gtsummary}",
-    "section": "All About {crane}",
-    "text": "All About {crane}"
-  },
-  {
     "objectID": "slides/index.html#what-is-crane",
     "href": "slides/index.html#what-is-crane",
     "title": "Beyond {gtsummary}",
@@ -32,7 +25,7 @@
     "href": "slides/index.html#a-little-data-preparation",
     "title": "Beyond {gtsummary}",
     "section": "A Little Data Preparation",
-    "text": "A Little Data Preparation\n\nlibrary(gtsummary)\nlibrary(tidyverse)\n\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  filter(SAFFL == \"Y\") |&gt; \n  mutate(ARM2 = word(ARM), FEMALE = SEX == \"F\") |&gt; \n  labelled::set_variable_labels(FEMALE = \"Female\")\n\nadae &lt;- pharmaverseadam::adae |&gt; \n  filter(\n    USUBJID %in% adsl$USUBJID,\n    AESOC %in% c(\"CARDIAC DISORDERS\", \"EYE DISORDERS\"),\n    AEDECOD %in% c(\"ATRIAL FLUTTER\", \"MYOCARDIAL INFARCTION\", \"EYE ALLERGY\", \"EYE SWELLING\")\n  ) |&gt; \n  mutate(ARM2 = word(ARM))\n\nadtte &lt;- pharmaverseadam::adtte_onco |&gt; \n  filter(PARAM == \"Overall Survival\")"
+    "text": "A Little Data Preparation\n\nlibrary(gtsummary)\nlibrary(tidyverse)\n\nadsl &lt;- pharmaverseadam::adsl |&gt; \n  filter(SAFFL == \"Y\") |&gt; \n  mutate(ARM2 = word(ARM), FEMALE = SEX == \"F\") |&gt; \n  labelled::set_variable_labels(FEMALE = \"Female\")\n\nadae &lt;- pharmaverseadam::adae |&gt; \n  filter(\n    USUBJID %in% adsl$USUBJID,\n    AESOC %in% c(\"CARDIAC DISORDERS\", \"EYE DISORDERS\"),\n    AEDECOD %in% c(\"ATRIAL FLUTTER\", \"MYOCARDIAL INFARCTION\", \"EYE ALLERGY\", \"EYE SWELLING\")\n  ) |&gt; \n  mutate(ARM2 = word(ARM))\n\nadtte &lt;- pharmaverseadam::adtte_onco |&gt; \n  dplyr::filter(PARAM == \"Progression Free Survival\") |&gt; \n  mutate(ARM2 = word(ARM))"
   },
   {
     "objectID": "slides/index.html#gtsummary-tables",
@@ -154,11 +147,25 @@
     "text": "Finally, All About {crane}"
   },
   {
+    "objectID": "slides/index.html#wrapping-functions",
+    "href": "slides/index.html#wrapping-functions",
+    "title": "Beyond {gtsummary}",
+    "section": "Wrapping Functions ",
+    "text": "Wrapping Functions \nThe first function we added to {crane} was tbl_roche_summary(): a very thin wrapper for gtsummary::tbl_summary().\n\n\nContinuous variables default to continuous2.\ntbl_summary(missing*) arguments have been changed to tbl_roche_summary(nonmissing*).\n\nWe highlight non-missing counts over missing counts, which are the default in {gtsummary}\n\nCounts represented by 0 (0%) print as 0.\n\n\n\nlibrary(crane)\n\nadsl |&gt; \n  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, \"REFUSED\")) |&gt; \n  tbl_roche_summary(\n    by = ARM2, \n    include = c(AGE, ETHNIC),\n    nonmissing = \"always\"\n  )"
+  },
+  {
+    "objectID": "slides/index.html#wrapping-functions-output",
+    "href": "slides/index.html#wrapping-functions-output",
+    "title": "Beyond {gtsummary}",
+    "section": "Wrapping Functions ",
+    "text": "Wrapping Functions \n\n\n\nTable 1\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nAge\n\n\n\n\n\n\n    n\n86\n168\n\n\n    Mean (SD)\n75 (9)\n75 (8)\n\n\n    Median\n76\n77\n\n\n    Min - Max\n52 - 89\n51 - 88\n\n\nETHNIC\n\n\n\n\n\n\n    n\n86\n168\n\n\n    HISPANIC OR LATINO\n3 (3.5%)\n9 (5.4%)\n\n\n    NOT HISPANIC OR LATINO\n83 (97%)\n159 (95%)\n\n\n    REFUSED\n0\n0"
+  },
+  {
     "objectID": "slides/index.html#extending-with-new-functions",
     "href": "slides/index.html#extending-with-new-functions",
     "title": "Beyond {gtsummary}",
     "section": "Extending with New Functions ",
-    "text": "Extending with New Functions \n\nLab values are summarized by visit and include the change from baseline.\nThis is a simple table that is just a tbl_merge() of the AVAL summary and the CHG summary.\nBut the general structure appears enough times in our catalog, we make it simple for our programmers to create.\n\n\nadlb |&gt; \n  dplyr::filter(PARAM == \"Albumin (g/L)\") |&gt; \n  tbl_baseline_chg(\n    by = \"ARM2\",\n    baseline_level = \"Baseline\",\n    denominator = adsl\n  )"
+    "text": "Extending with New Functions \n\nLab values are summarized by visit and include the change from baseline.\nThis is a simple table that is just a tbl_merge() of the AVAL summary and the CHG summary.\nBut the general structure appears enough times in our catalog, we make it simple for our programmers to create.\n\n\nlibrary(crane)\n\nadlb |&gt; \n  dplyr::filter(PARAM == \"Albumin (g/L)\") |&gt; \n  tbl_baseline_chg(\n    by = \"ARM2\",\n    baseline_level = \"Baseline\",\n    denominator = adsl\n  )"
   },
   {
     "objectID": "slides/index.html#extending-with-new-functions-1",
@@ -187,6 +194,34 @@
     "title": "Beyond {gtsummary}",
     "section": "Extending with New Functions ",
     "text": "Extending with New Functions"
+  },
+  {
+    "objectID": "slides/index.html#create-a-company-theme",
+    "href": "slides/index.html#create-a-company-theme",
+    "title": "Beyond {gtsummary}",
+    "section": "Create a Company Theme ",
+    "text": "Create a Company Theme \nOur theme is implemented in crane::theme_gtsummary_roche()\nPrimary changes include:\n\nSets a custom function for rounding percentages.\nRound all p-values to four decimal places.\nHeaders default to presenting with bold and include N in parenthesis, e.g. 'Placebo  \\n (N = 184)'.\nAll tables are printed with {flextable} and we add Roche-specific styling to the table.\nUpdate the default font, font size, table borders, cell padding, etc. to meet our guidelines."
+  },
+  {
+    "objectID": "slides/index.html#create-a-company-theme-1",
+    "href": "slides/index.html#create-a-company-theme-1",
+    "title": "Beyond {gtsummary}",
+    "section": "Create a Company Theme ",
+    "text": "Create a Company Theme \n\n\ntheme_gtsummary_roche()\n\nadsl |&gt; \n  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, \"REFUSED\")) |&gt; \n  tbl_roche_summary(\n    by = ARM2, \n    include = c(AGE, ETHNIC),\n    nonmissing = \"always\"\n  )\n\n\nPlacebo  (N = 86)Xanomeline  (N = 168)Agen86168Mean (SD)75 (9)75 (8)Median7677Min - Max52 - 8951 - 88ETHNICn86168HISPANIC OR LATINO3 (3.5%)9 (5.4%)NOT HISPANIC OR LATINO83 (96.5%)159 (94.6%)REFUSED00"
+  },
+  {
+    "objectID": "slides/index.html#extend-with-ard-first-functionality",
+    "href": "slides/index.html#extend-with-ard-first-functionality",
+    "title": "Beyond {gtsummary}",
+    "section": "Extend with ARD-first Functionality ",
+    "text": "Extend with ARD-first Functionality \nWe didn’t have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.\nThe {gtsummary} package also supports creating tables using ARDs (Analysis Results Datasets).\nData ➡️ ARD ➡️ Table\nThis method is particularly useful for efficacy tables, since they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.\nCheck out the ARD-first Vignette for a detailed walk through."
+  },
+  {
+    "objectID": "slides/index.html#extend-with-ard-first-functionality-1",
+    "href": "slides/index.html#extend-with-ard-first-functionality-1",
+    "title": "Beyond {gtsummary}",
+    "section": "Extend with ARD-first Functionality ",
+    "text": "Extend with ARD-first Functionality \n\ntbl_survfit_times(\n  data = adtte, \n  times = 12, \n  by = \"ARM2\", \n  label = \"Month {time}\"\n)\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nMonth 12\n\n\n\n\n\n\n    Patients remaining at risk\n5\n6\n\n\n    Event Free Rate (%)\n80.0%\n100.0%\n\n\n    95% CI\n51.6%, 100.0%\n100.0%, 100.0%"
   },
   {
     "objectID": "index.html",
