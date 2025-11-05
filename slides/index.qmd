@@ -36,17 +36,6 @@ fa_fill <- "#606060"
 options(width = 200)
 ```
 
-## All About {crane}
-
-::::: columns
-::: {.column width="50%"}
-![](images/crane-movie-poster2.png)
-:::
-
-::: {.column width="50%"}
-![](images/crane-movie-poster2.png)
-:::
-:::::
 
 ## What is {crane} ? <img src="images/crane-hex.png" align="right" height="120"/>
 
@@ -125,7 +114,8 @@ adae <- pharmaverseadam::adae |>
   mutate(ARM2 = word(ARM))
 
 adtte <- pharmaverseadam::adtte_onco |> 
-  filter(PARAM == "Overall Survival")
+  dplyr::filter(PARAM == "Progression Free Survival") |> 
+  mutate(ARM2 = word(ARM))
 ```
 
 ## {gtsummary} Tables <img src="images/gtsummary-hex.png" align="right" height="120"/>
@@ -503,6 +493,36 @@ Figure contains 30-day downloads for all summary table packages on CRAN.
 :::
 :::::
 
+## Wrapping Functions <img src="images/crane-hex.png" align="right" height="120"/>
+
+The first function we added to {crane} was `tbl_roche_summary()`: a _very thin_ wrapper for `gtsummary::tbl_summary()`.
+
+::: {.small}
+
+- Continuous variables default to `continuous2`.
+
+- `tbl_summary(missing*)` arguments have been changed to `tbl_roche_summary(nonmissing*)`.
+
+    - We highlight non-missing counts over missing counts, which are the default in {gtsummary}
+    
+- Counts represented by `0 (0%)` print as `0`.
+
+:::
+
+```{r}
+#| label: tbl-roche-summary
+#| output-location: slide
+library(crane)
+
+adsl |> 
+  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, "REFUSED")) |> 
+  tbl_roche_summary(
+    by = ARM2, 
+    include = c(AGE, ETHNIC),
+    nonmissing = "always"
+  )
+```
+
 ## Extending with New Functions <img src="images/crane-hex.png" align="right" height="120"/>
 
 ::: small
@@ -516,6 +536,8 @@ But the general structure appears enough times in our catalog, we make it simple
 ```{r}
 #| label: tbl_baseline_chg
 #| eval: false
+library(crane)
+
 adlb |> 
   dplyr::filter(PARAM == "Albumin (g/L)") |> 
   tbl_baseline_chg(
@@ -541,3 +563,61 @@ adlb |>
 
 ![](images/Merge.png){fig-align="center" width="80%"}
 
+## Create a Company Theme <img src="images/crane-hex.png" align="right" height="120"/>
+
+Our theme is implemented in `crane::theme_gtsummary_roche()`
+
+Primary changes include:
+
+-   Sets a custom function for [rounding percentages]{.emphasis}.
+
+-   Round all [p-values]{.emphasis} to four decimal places.
+
+-   [Headers]{.emphasis} default to presenting with bold and include N in parenthesis, e.g. `'Placebo  \n (N = 184)'`.
+
+-   All tables are printed with [{flextable}]{.emphasis} and we add Roche-specific styling to the table.
+
+-   Update the default [font, font size, table borders, cell padding, etc.]{.emphasis} to meet our guidelines.
+
+## Create a Company Theme <img src="images/crane-hex.png" align="right" height="120"/>
+
+```{r}
+#| output-location: column
+theme_gtsummary_roche()
+
+adsl |> 
+  dplyr::mutate(ETHNIC = forcats::fct_expand(ETHNIC, "REFUSED")) |> 
+  tbl_roche_summary(
+    by = ARM2, 
+    include = c(AGE, ETHNIC),
+    nonmissing = "always"
+  )
+```
+
+## Extend with ARD-first Functionality <img src="images/crane-hex.png" align="right" height="120"/>
+
+We didn't have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.
+
+The {gtsummary} package also supports creating tables using ARDs (Analysis Results Datasets).
+
+Data ➡️ ARD ➡️ Table
+
+This method is particularly useful for efficacy tables, since they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.
+
+Check out the [ARD-first Vignette](https://www.danieldsjoberg.com/gtsummary/articles/tbl_ard-functions.html) for a detailed walk through.
+
+## Extend with ARD-first Functionality <img src="images/crane-hex.png" align="right" height="120"/>
+
+```{r}
+#| echo: false
+reset_gtsummary_theme()
+```
+
+```{r}
+tbl_survfit_times(
+  data = adtte, 
+  times = 12, 
+  by = "ARM2", 
+  label = "Month {time}"
+)
+```
