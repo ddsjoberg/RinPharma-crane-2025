@@ -36,7 +36,6 @@ fa_fill <- "#606060"
 options(width = 200)
 ```
 
-
 ## What is {crane} ? <img src="images/crane-hex.png" align="right" height="120"/>
 
 -   {crane} is the Roche extension to {gtsummary} for Roche's reporting requirements
@@ -120,16 +119,18 @@ adtte <- pharmaverseadam::adtte_onco |>
 
 ## {gtsummary} Tables <img src="images/gtsummary-hex.png" align="right" height="120"/>
 
-We will review the following summary table.
+We will review briefly just one summary table function.
 
 -   `tbl_summary()`
 
--   `tbl_hierarchical()`
 
 :::: fragment
 Other functions helpful functions we're not covering:
 
 ::: small
+
+-   `tbl_hierarchical()`: Summarize AE, Con Meds, and other similar rates
+
 -   `tbl_hierarchical_count()`: similar to `tbl_hierarchical()` for counts instead of rates
 
 -   `tbl_cross()`: cross tabulations
@@ -429,8 +430,7 @@ Two or more {gtsummary} tables can be combined by either [merging]{.emphasis} or
 -   `tbl_stack()` for vertical combining
 
 ::: fragment
-<br><br>
-***But more on this later in the {crane} section***
+<br><br> ***But more on this later in the {crane} section***
 :::
 ::::
 
@@ -438,7 +438,7 @@ Two or more {gtsummary} tables can be combined by either [merging]{.emphasis} or
 
 ![](images/gtsummary_rmarkdown.png)
 
-## {gtsummary CRAN Downloads
+## Monthly {gtsummary} CRAN Downloads
 
 ```{r}
 #| echo: false
@@ -495,18 +495,16 @@ Figure contains 30-day downloads for all summary table packages on CRAN.
 
 ## Wrapping Functions <img src="images/crane-hex.png" align="right" height="120"/>
 
-The first function we added to {crane} was `tbl_roche_summary()`: a _very thin_ wrapper for `gtsummary::tbl_summary()`.
+The first function we added to {crane} was `tbl_roche_summary()`: a *very thin* wrapper for `gtsummary::tbl_summary()`.
 
-::: {.small}
+::: small
+-   Continuous variables default to `continuous2`.
 
-- Continuous variables default to `continuous2`.
+-   `tbl_summary(missing*)` arguments have been changed to `tbl_roche_summary(nonmissing*)`.
 
-- `tbl_summary(missing*)` arguments have been changed to `tbl_roche_summary(nonmissing*)`.
+    -   We highlight non-missing counts over missing counts, which are the default in {gtsummary}
 
-    - We highlight non-missing counts over missing counts, which are the default in {gtsummary}
-    
-- Counts represented by `0 (0%)` print as `0`.
-
+-   Counts represented by `0 (0%)` print as `0`.
 :::
 
 ```{r}
@@ -541,7 +539,7 @@ library(crane)
 adlb |> 
   dplyr::filter(PARAM == "Albumin (g/L)") |> 
   tbl_baseline_chg(
-    by = "ARM2",
+    by = "ARM",
     baseline_level = "Baseline",
     denominator = adsl
   )
@@ -573,11 +571,11 @@ Primary changes include:
 
 -   Round all [p-values]{.emphasis} to four decimal places.
 
--   [Headers]{.emphasis} default to presenting with bold and include N in parenthesis, e.g. `'Placebo  \n (N = 184)'`.
+-   [Headers]{.emphasis} default to include the N in parenthesis _without_ bold, e.g. `'Placebo  \n (N = 184)'`.
 
 -   All tables are printed with [{flextable}]{.emphasis} and we add Roche-specific styling to the table.
 
--   Update the default [font, font size, table borders, cell padding, etc.]{.emphasis} to meet our guidelines.
+    -   Update the default [font, font size, table borders, cell padding, etc.]{.emphasis} to meet our guidelines.
 
 ## Create a Company Theme <img src="images/crane-hex.png" align="right" height="120"/>
 
@@ -596,15 +594,15 @@ adsl |>
 
 ## Extend with ARD-first Functionality <img src="images/crane-hex.png" align="right" height="120"/>
 
-We didn't have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.
+- We don't have time to cover in detail, but there is another wonderful way to create bespoke tables and functions.
 
-The {gtsummary} package also supports creating tables using ARDs (Analysis Results Datasets).
+- The {gtsummary} package supports creating tables using ARDs (Analysis Results Datasets).
 
-Data ➡️ ARD ➡️ Table
+    - Data ➡️ ARD ➡️ Table
 
-This method is particularly useful for efficacy tables, since they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.
+- This method is particularly useful for efficacy tables, as they contain statistics that are not our standard rates, counts, and univariate descriptor statistics.
 
-Check out the [ARD-first Vignette](https://www.danieldsjoberg.com/gtsummary/articles/tbl_ard-functions.html) for a detailed walk through.
+- Review the [ARD-first Vignette](https://www.danieldsjoberg.com/gtsummary/articles/tbl_ard-functions.html) for a detailed walk through.
 
 ## Extend with ARD-first Functionality <img src="images/crane-hex.png" align="right" height="120"/>
 
@@ -621,3 +619,26 @@ tbl_survfit_times(
   label = "Month {time}"
 )
 ```
+
+## 
+
+
+:::::: columns
+:::: {.column width="65%"}
+
+::: largest
+
+***When it comes time to build your custom tables, use the {crane} package as a blueprint.***
+
+:::
+
+::::
+
+:::: {.column width="35%"}
+
+<img src="images/crane-with-blueprints.png" width="450"/>
+
+::::
+::::::
+
+
