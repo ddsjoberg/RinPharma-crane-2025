@@ -3,35 +3,34 @@ project:
   output-dir: docs
   render:
     - "*.qmd"
-    - "!slides/**/[0-9]*.qmd"
+    - "!slides/**/*.qmd"
   
 website:
   page-navigation: true
-  title: "ARDs + AI: Building the Future of Clinical Reporting with {gtsummary} and {cards}"
-  description: "BBSW Workshop 2025"
-  favicon: "images/cards-cardx-gtsummary-hex.png"
+  title: "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting"
+  description: "Talk at R in Pharma 2025"
+  favicon: "images/crane-hex.png"
 
-  repo-url: https://github.com/ddsjoberg/BBSW-gtsummary-ARD-2025
+  repo-url: https://github.com/ddsjoberg/RinPharma-crane-2025
   repo-actions: [edit, issue]
 
   page-footer:
     left: "This page is built with ❤️ and [Quarto](https://quarto.org/). Inspired by [@minecr.bsky.social](https://bsky.app/profile/minecr.bsky.social)."
-    background: "#99B1C6"
+    background: "#ffcee8"
 
   sidebar:
-    background: "#99B1C6"
-    logo: "images/cards-cardx-gtsummary-hex.png"
+    background: "#ffcee8"
+    logo: "images/crane-hex.png"
     pinned: true
     align: center
     tools:
       - icon: github
-        href: https://github.com/ddsjoberg/BBSW-gtsummary-ARD-2025
+        href: https://github.com/ddsjoberg/RinPharma-crane-2025
         text: GitHub
     style: docked
     contents:
      - href: index.qmd
        text: Home
-     - href: exercises/exercises.qmd
      - href: license.qmd
 
 format:
