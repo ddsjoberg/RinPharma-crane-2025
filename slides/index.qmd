@@ -126,6 +126,14 @@ df_30day |>
 Figure contains 30-day downloads for all summary table packages on CRAN.
 :::
 
+## {gtsummary} + LLMs <img src="images/gtsummary-hex.png" align="right" height="120"/>
+
+- Since {gtsummary} is widely adopted, our LLMs besties work wonderfully out of the box. No additional training needed!
+    
+- The {gtsummary} site has recently added an AI assistant and it's AMAZING! Powered by `kapa.ai` (thank you!)
+    
+<img src="images/gtsummary-kapa.png" align="center" height="300"/>
+
 ## This Talk is Not about {gtsummary} <img src="images/gtsummary-hex.png" align="right" height="120"/>
 
 ::: larger
