@@ -3,8 +3,7 @@ project:
   output-dir: docs
   render:
     - "*.qmd"
-    - "!slides/**/*.qmd"
-  
+
 website:
   page-navigation: true
   title: "Beyond {gtsummary}: How the {crane} Package Extends the Framework for Pharmaceutical Reporting"
