@@ -21,6 +21,13 @@
     "text": "Monthly {gtsummary} CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
   },
   {
+    "objectID": "slides/index.html#gtsummary-llms",
+    "href": "slides/index.html#gtsummary-llms",
+    "title": "Beyond {gtsummary}",
+    "section": "{gtsummary} + LLMs ",
+    "text": "{gtsummary} + LLMs \n\nSince {gtsummary} is widely adopted, our LLMs besties work wonderfully out of the box. No additional training needed!\nThe {gtsummary} site has recently added an AI assistant and it’s AMAZING! Powered by kapa.ai (thank you!)"
+  },
+  {
     "objectID": "slides/index.html#this-talk-is-not-about-gtsummary",
     "href": "slides/index.html#this-talk-is-not-about-gtsummary",
     "title": "Beyond {gtsummary}",
