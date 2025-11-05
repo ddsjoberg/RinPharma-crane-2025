@@ -14,11 +14,18 @@
     "text": "But First, What is {gtsummary} ?\n\n\nHow it started\n\n\nBegan to address reproducibility issues while working in academia\nGoal to build a package to summarize study results with code that was both simple and customizable\n\n\n\nHow it’s going\n\n\nThe stats\n\n1,700,000 installations from CRAN\n1,200 GitHub stars\n1,000 citations in peer-reviewed articles\n50 code contributors\n\nWon the 2021 American Statistical Association (ASA) Innovation in Programming Award\nWon the 2024 Posit Pharma Table Contest\nWon the 2025 Brian Bole Award of Excellence from R in Pharma"
   },
   {
+    "objectID": "slides/index.html#monthly-gtsummary-cran-downloads",
+    "href": "slides/index.html#monthly-gtsummary-cran-downloads",
+    "title": "Beyond {gtsummary}",
+    "section": "Monthly {gtsummary} CRAN Downloads",
+    "text": "Monthly {gtsummary} CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
+  },
+  {
     "objectID": "slides/index.html#this-talk-is-not-about-gtsummary",
     "href": "slides/index.html#this-talk-is-not-about-gtsummary",
     "title": "Beyond {gtsummary}",
     "section": "This Talk is Not about {gtsummary} ",
-    "text": "This Talk is Not about {gtsummary} \n\nI want to touch on two items\n\n{gtsummary} creates beautiful tables that are easy to customize\n{gtsummary} supports themes that allow users to change defaults and other details of summary tables"
+    "text": "This Talk is Not about {gtsummary} \n\nBut, I want to touch on two items\n\n{gtsummary} creates beautiful tables that are easy to customize\n{gtsummary} supports themes that allow users to change defaults and other details of summary tables"
   },
   {
     "objectID": "slides/index.html#a-little-data-preparation",
@@ -133,13 +140,6 @@
     "text": "{gtsummary} print engines"
   },
   {
-    "objectID": "slides/index.html#monthly-gtsummary-cran-downloads",
-    "href": "slides/index.html#monthly-gtsummary-cran-downloads",
-    "title": "Beyond {gtsummary}",
-    "section": "Monthly {gtsummary} CRAN Downloads",
-    "text": "Monthly {gtsummary} CRAN Downloads\n\n\n\n\n\n\n\n\n\n\n\nFigure contains 30-day downloads for all summary table packages on CRAN."
-  },
-  {
     "objectID": "slides/index.html#finally-all-about-crane",
     "href": "slides/index.html#finally-all-about-crane",
     "title": "Beyond {gtsummary}",
@@ -221,7 +221,7 @@
     "href": "slides/index.html#extend-with-ard-first-functionality-1",
     "title": "Beyond {gtsummary}",
     "section": "Extend with ARD-first Functionality ",
-    "text": "Extend with ARD-first Functionality \n\ntbl_survfit_times(\n  data = adtte, \n  times = 12, \n  by = \"ARM2\", \n  label = \"Month {time}\"\n)\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nMonth 12\n\n\n\n\n\n\n    Patients remaining at risk\n5\n6\n\n\n    Event Free Rate (%)\n80.0%\n100.0%\n\n\n    95% CI\n51.6%, 100.0%\n100.0%, 100.0%"
+    "text": "Extend with ARD-first Functionality \n\ntbl_survfit_times(\n  data = adtte, \n  times = 12, \n  by = \"ARM2\", \n  label = \"Month {time}\"\n)\n\n\n\n\n\n\n\n\n\n\n\n\n\nPlacebo\n(N = 86)\nXanomeline\n(N = 168)\n\n\n\n\nMonth 12\n\n\n\n\n\n\n    Patients remaining at risk\n5\n6\n\n\n    Event Free Rate (%)\n80.0%\n100.0%\n\n\n    95% CI\n51.6%, 100.0%\n100.0%, 100.0%\n\n\n\n\n\n\n\n\n\nIf you prefer not to make an ARD first, you can also just create a data frame of a table and convert it to {gtsummary} and style it from there."
   },
   {
     "objectID": "slides/index.html#section-1",
